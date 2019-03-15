@@ -473,6 +473,33 @@ interface Layer : Iterable<Entry<*>> {
         }
     }
     
+    /**
+     * Resets all the [entries] on `this` layer.
+     *
+     * Resetting an entry means that its `value` property is set to the value of its `default` property.
+     *
+     * @see resetAllEntries
+     */
+    @JvmDefault
+    fun resetEntries() {
+        for (entry in this) {
+            // so that we don't cause a 'IllegalAccessException'
+            if (entry.value.isMutable) entry.value.reset()
+        }
+    }
+    
+    /**
+     * Resets all the [entries] on `this` layer, and the entries of all sub-layers.
+     *
+     * Resetting an entry means that its `value` property is set to the value of its `default` property.
+     *
+     * @see resetEntries
+     */
+    @JvmDefault
+    fun resetAllEntries() {
+        resetEntries()
+        for ((_, subLayer) in layers) subLayer.resetAllEntries()
+    }
     
     /**
      * Creates a valid path for storage and retrieval.
