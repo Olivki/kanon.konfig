@@ -35,13 +35,10 @@ dependencies {
     // google stuff
     implementation(group = "com.google.code.gson", name = "gson", version = "2.8.5")
     implementation(group = "com.github.mgrzeszczak", name = "json-dsl", version = "1.1")
-    implementation(group = "com.google.guava", name = "guava", version = "27.1-jre")
     implementation(group = "com.github.salomonbrys.kotson", name = "kotson", version = "2.5.0")
-    
     
     // Kanon
     implementation(group = "moe.kanon.kommons", name = "kanon.kommons", version = "0.6.0-alpha")
-    implementation(group = "moe.kanon.xml", name = "kanon.xml", version = "2.0.0")
     
     // Test Dependencies
     testImplementation(group = "io.kotlintest", name = "kotlintest-runner-junit5", version = "3.1.11")

@@ -77,6 +77,7 @@ class JsonProvider(override val config: Konfig) : Provider {
     override val format: String = "JSON"
     
     override val gson: Gson = GsonBuilder().apply {
+        setLenient() // because who cares about the json standard lol, we hocon now.
         setPrettyPrinting()
         disableHtmlEscaping()
         serializeNulls()
@@ -105,11 +106,7 @@ class JsonProvider(override val config: Konfig) : Provider {
             val result: Any? = gson.fromJson(container["value"], entry.value.javaType)
             val currentValue = config.getNullable<Any>(key)
             
-            if (currentValue != result) {
-                println("Entry <$key> has been changed, old <$currentValue> new <$result>")
-                config[key] = result
-                println()
-            }
+            if (currentValue != result) config[key] = result
         }
     }
     
@@ -131,11 +128,7 @@ class JsonProvider(override val config: Konfig) : Provider {
             val result: Any? = gson.fromJson(container["value"], entry.value.javaType)
             val currentValue = currentLayer.getNullable<Any>(key)
         
-            if (currentValue != result && entry.value.isMutable) {
-                println("Entry <$key> has been changed, old <$currentValue> new <$result>")
-                currentLayer[key] = result
-                println()
-            }
+            if (currentValue != result && entry.value.isMutable) currentLayer[key] = result
         }
     }
     
@@ -205,137 +198,3 @@ class JsonProvider(override val config: Konfig) : Provider {
         }
     }
 }
-
-/*class XmlProvider(override val config: Konfig) : Provider {
-    
-    override val format: String = "XML"
-    
-    private val module: JacksonXmlModule = JacksonXmlModule()
-    
-    init {
-        module.setDefaultUseWrapper(true)
-    }
-    
-    override val mapper: ObjectMapper = XmlMapper(module)
-    
-    @Throws(IOException::class, KonfigDeserializationException::class)
-    override fun loadFrom(file: Path) {
-        file.requireExistence()
-        
-        file.parseAsDocument(validator = XMLReaders.NONVALIDATING) {
-            elements("entry") {
-                val name = source.getChildText("name")
-                
-                if (name.isBlank()) throw KonfigSerializationException.create(
-                    file = file,
-                    info = "the 'name' element has no text."
-                )
-                
-                val entry: Entry<Any> = config.getEntryOrNull(name) ?: when (config.settings.onUnknownEntry) {
-                    FAIL -> throw UnknownEntryException.create(name, config)
-                    IGNORE -> return
-                    CREATE_NEW -> TODO()
-                }
-                
-                /*val input = XMLOutputter(Format.getCompactFormat()).outputString(source.getChild("container"))
-                println(input)
-                println(
-                    TypeFactory.defaultInstance().constructParametricType(
-                        entry.value::class.java,
-                        entry.value.javaType
-                    )
-                )
-                val type = TypeFactory.defaultInstance().constructParametricType(
-                    entry.value::class.java, entry.value.javaType
-                )
-                
-                val value: Any? = mapper.readValue(input, type)
-                println("$value")*/
-                val input = XMLOutputter(Format.getCompactFormat()).outputString(
-                    source.getChild("container").getChild("value").children.first()
-                )
-                
-                val value: Any? = mapper.readValue(input, entry.value.javaType)
-                println(value)
-            }
-        }
-    }
-    
-    @Throws(KonfigSerializationException::class)
-    override fun saveTo(file: Path) {
-        file.deleteIfExists()
-        val document = xml("root") {
-            attributes("name" to config.name)
-            
-            // adding the root level entries to the document
-            root.addContent(config.createEntries().cloneContent())
-            
-            // adding all sub-layers and their respective entries to the document
-            val layers = config.createLayers()
-            if (!layers.children.isEmpty()) root.addContent(layers)
-        }
-        
-        document.saveTo(file.parent, file.name)
-    }
-    
-    private fun Layer.createLayers(): Element {
-        return xml("layer") {
-            attributes("name" to this@createLayers.name)
-            
-            root.addContent(this@createLayers.createEntries().cloneContent())
-            
-            for ((_, subLayer) in this@createLayers.layers) {
-                val layers = subLayer.createLayers()
-                if (!layers.children.isEmpty()) root.addContent(layers)
-            }
-            
-        }.document.detachRootElement()
-    }
-    
-    private fun Layer.createEntries(): Element {
-        val builder = SAXBuilder()
-        return xml(name) {
-            for ((key, entry) in entries) {
-                if (!entry.value.shouldDeserialize) continue
-                element("entry") {
-                    attributes("type" to entry.value.name)
-                    
-                    text("name") { entry.name }
-                    text("description") { entry.description }
-                    if (entry.value is LimitedValue<*>)
-                        text("range") { (entry.value as LimitedValue<*>).range.toString() }
-                    if (entry.value is LimitedStringValue)
-                        text("range") { (entry.value as LimitedStringValue).range.toString() }
-                    
-                    element("container") {
-                        attributes {
-                            attribute("class") { entry.value.javaType.toCanonical() }
-                            attribute("type") { entry.value.name }
-                        }
-                        
-                        element("value") {
-                            val valueXml = StringReader(valueToString<Any>(entry.parent.getNullable(key)))
-                            source.addContent(builder.build(valueXml).detachRootElement())
-                        }
-                        
-                        if (entry.value.isMutable) element("default") {
-                            val defaultXml = StringReader(valueToString<Any>(entry.parent.getNullableDefault(key)))
-                            source.addContent(builder.build(defaultXml).detachRootElement())
-                        }
-                    }
-                    
-                    //val container = StringReader(valueToString(entry.value))
-                    
-                    //println(valueToString(entry.value::class.memberProperties.first { it.name == "value" }.getter.call(entry.value)))
-                    
-                    //source.addContent(builder.build(container).detachRootElement())
-                }
-            }
-        }.document.detachRootElement()
-    }
-    
-    override fun <V : Any> valueToString(value: V?): String =
-        mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value)
-    
-    override fun toString(): String = "XmlProvider(config=$config, format='$format', mapper=$mapper)"
-}*/
