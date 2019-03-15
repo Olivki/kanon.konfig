@@ -19,14 +19,14 @@
 package moe.kanon.konfig
 
 import com.google.gson.internal.`$Gson$Types`
-import moe.kanon.konfig.entries.Entry
+import moe.kanon.konfig.providers.AbstractProvider
 import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
+import moe.kanon.konfig.settings.KonfigSettings
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
 import kotlin.reflect.KClass
 
 interface Konfig : Layer {
@@ -48,17 +48,6 @@ interface Konfig : Layer {
     val file: Path
     
     /**
-     * The underlying [mapper][ObjectMapper] of `this` configuration.
-     *
-     * Note that this is mapper is the exact one that the [provider] uses, which means that this can be used to
-     * customize the serialization process *(not the serialization of the actual entry metadata and layer parts, as
-     * those are hard-wired into the system.)* for the values.
-     */
-    //@JvmDefault
-    //val mapper: ObjectMapper
-    //    get() = provider.mapper
-    
-    /**
      * The underlying root [layer][Layer] of `this` configuration.
      *
      * If not explicitly defined at the creation, the root layer will be created from the specified [name] of `this`
@@ -75,101 +64,25 @@ interface Konfig : Layer {
      * This allows the user to customize various parts of how the system interacts with all the data.
      *
      * Unless explicitly stated during the creation of `this` configuration, this will have been set to
-     * [Settings.default].
+     * [KonfigSettings.default].
      *
      * It is ***not*** recommended to change the values of this at any time except for during creation.
      */
-    val settings: Settings
+    val settings: KonfigSettings
     
     /**
-     * A container of settings for how a [Konfig] instance should behave.
+     * Attempts to load and set any changed entries from the [file] tied to `this` config.
+     *
+     * If [file] does not exist, a file will be created at its path filled with default values.
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    class Settings private constructor() {
-        
-        // the setters are all marked as "synthetic" so that they don't clutter the namespace, as they only return
-        // unit, which makes them less than ideal for replicating the builder pattern from the java side.
-        
-        /**
-         * What sort of action the system should take when encountering a unknown [entry][Entry] in the
-         * [config file][file] during the loading process.
-         *
-         * This setting only affects the [provider.loadFrom][Provider.loadFrom] operation, all `get` operations
-         * regarding entries will still behave the same.
-         *
-         * ([FAIL][UnknownEntryBehaviour.FAIL] by default)
-         */
-        @set:JvmSynthetic
-        var onUnknownEntry: UnknownEntryBehaviour = UnknownEntryBehaviour.FAIL
-        
-        /**
-         * What sort of action the system should take when encountering a unknown [entry][Entry] in the
-         * [config file][file] during the loading process.
-         *
-         * This setting only affects the [provider.loadFrom][Provider.loadFrom] operation, all `get` operations
-         * regarding entries will still behave the same.
-         */
-        fun onUnknownEntry(behaviour: UnknownEntryBehaviour) = apply { onUnknownEntry = behaviour }
-        
-        /**
-         * Whether or not the system should append what type of [value][Entry.Value] each [entry][Entry] is storing.
-         *
-         * If the configuration file is supposed to be read and modified by a user, it is probably for the better to
-         * have this set to `true`, as it can make it easier for the user to understand what types they can set the
-         * value to.
-         *
-         * Note that this is *purely* visual, and the system does not actually look at this value when the
-         * [config file][file] is being loaded.
-         */
-        @set:JvmSynthetic
-        var shouldPrintEntryType: Boolean = true
-        
-        /**
-         * Whether or not the system should append what type of [value][Entry.Value] each [entry][Entry] is storing.
-         *
-         * If the configuration file is supposed to be read and modified by a user, it is probably for the better to
-         * have this set to `true`, as it can make it easier for the user to understand what types they can set the
-         * value to.
-         *
-         * Note that this is *purely* visual, and the system does not actually look at this value when the
-         * [config file][file] is being loaded.
-         */
-        fun shouldPrintEntryType(shouldPrintEntryType: Boolean) =
-            apply { this.shouldPrintEntryType = shouldPrintEntryType }
-        
-        companion object {
-            /**
-             * The default settings used by the system.
-             */
-            @JvmStatic
-            val default: Settings
-                get() = Settings()
-        }
-        
-        /**
-         * Represents an action the system will take when encountering an unknown `entry` when loading the
-         * configuration from the [file].
-         */
-        enum class UnknownEntryBehaviour {
-            /**
-             * The system will fail loudly and throw a [UnknownEntryException] when it encounters an unknown `entry` in
-             * the [config file][file].
-             */
-            FAIL,
-            /**
-             * The system will quietly continue on as if nothing happened when it encounters an unknown `entry` in the
-             * [config file][file].
-             */
-            IGNORE,
-            /**
-             * The system will attempt to create a wholly new `entry` from the available entry data in the
-             * [config file][file] when it encounters an unknown `entry`.
-             *
-             * If the `entry` is stored under an unknown `layer`, then that `layer` will also be created.
-             */
-            CREATE_NEW
-        }
-    }
+    @JvmDefault
+    fun loadFromFile() = provider.loadFrom(file)
+    
+    /**
+     * Attempts to save all the entries and values of `this` config to the [file] tied to `this` config.
+     */
+    @JvmDefault
+    fun saveToFile() = provider.saveTo(file)
     
     companion object {
         /**
@@ -181,7 +94,8 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("create")
-        operator fun invoke(name: String, file: Path): Konfig = KonfigImpl(name, file)
+        operator fun invoke(name: String, file: Path, provider: Provider = JsonProvider()): Konfig =
+            KonfigImpl(name, file, provider = provider)
         
         /**
          * Creates a new [Konfig] from the specified [name] and [settings].
@@ -202,8 +116,12 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("create")
-        operator fun invoke(name: String, file: Path, settings: Settings): Konfig =
-            KonfigImpl(name, file, settings = settings)
+        operator fun invoke(
+            name: String,
+            file: Path,
+            settings: KonfigSettings,
+            provider: Provider = JsonProvider()
+        ): Konfig = KonfigImpl(name, file, settings = settings, provider = provider)
         
         /**
          * Creates a new [Konfig] from the specified [name], and applies the specified [settings] to the newly
@@ -216,8 +134,12 @@ interface Konfig : Layer {
          */
         @JvmSynthetic
         @JvmName("create")
-        operator fun invoke(name: String, file: Path, settings: Settings.() -> Unit): Konfig =
-            KonfigImpl(name, file, settings = Settings.default.apply(settings))
+        operator fun invoke(
+            name: String,
+            file: Path,
+            provider: Provider = JsonProvider(),
+            settings: KonfigSettings.() -> Unit
+        ): Konfig = KonfigImpl(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -229,7 +151,8 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("from")
-        operator fun invoke(layer: Layer, file: Path): Konfig = KonfigImpl(layer.name, file, layer)
+        operator fun invoke(layer: Layer, file: Path, provider: Provider = JsonProvider()): Konfig =
+            KonfigImpl(layer.name, file, layer, provider = provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified
@@ -253,8 +176,12 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("from")
-        operator fun invoke(layer: Layer, file: Path, settings: Settings): Konfig =
-            KonfigImpl(layer.name, file, layer, settings)
+        operator fun invoke(
+            layer: Layer,
+            file: Path,
+            settings: KonfigSettings,
+            provider: Provider = JsonProvider()
+        ): Konfig = KonfigImpl(layer.name, file, layer, settings, provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified
@@ -268,8 +195,12 @@ interface Konfig : Layer {
          */
         @JvmSynthetic
         @JvmName("from")
-        operator fun invoke(layer: Layer, file: Path, settings: Settings.() -> Unit): Konfig =
-            KonfigImpl(layer.name, file, layer, Settings.default.apply(settings))
+        operator fun invoke(
+            layer: Layer,
+            file: Path,
+            provider: Provider = JsonProvider(),
+            settings: KonfigSettings.() -> Unit
+        ): Konfig = KonfigImpl(layer.name, file, layer, KonfigSettings.default.apply(settings), provider)
     }
 }
 
@@ -290,8 +221,8 @@ fun configOf(name: String, file: Path): Konfig = Konfig(name, file)
  * As this function does not ask for a explicit [root] layer, one will be created from this name.
  * @param [settings] The custom settings to create the config with.
  */
-fun configOf(name: String, file: Path, settings: Konfig.Settings.() -> Unit): Konfig =
-    Konfig(name, file, settings = Konfig.Settings.default.apply(settings))
+fun configOf(name: String, file: Path, settings: KonfigSettings.() -> Unit): Konfig =
+    Konfig(name, file, settings = KonfigSettings.default.apply(settings))
 
 /**
  * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -313,44 +244,41 @@ fun configFrom(layer: Layer, file: Path): Konfig = Konfig(layer, file)
  * already connected to it.
  * @param [settings] The custom settings to create the config with.
  */
-fun configFrom(layer: Layer, file: Path, settings: Konfig.Settings.() -> Unit): Konfig =
-    Konfig(layer, file, settings = Konfig.Settings.default.apply(settings))
+fun configFrom(layer: Layer, file: Path, settings: KonfigSettings.() -> Unit): Konfig =
+    Konfig(layer, file, settings = KonfigSettings.default.apply(settings))
 
 /**
  * An implementation of [Konfig].
  *
  * This is the class that is used for all the factory methods that `Konfig` has.
  */
-class KonfigImpl @JvmOverloads constructor(
+data class KonfigImpl @JvmOverloads constructor(
     override val name: String,
     override val file: Path,
     override val root: Layer = KonfigLayer(name),
-    override val settings: Konfig.Settings = Konfig.Settings.default
+    override val settings: KonfigSettings = KonfigSettings.default,
+    override val provider: Provider = JsonProvider()
 ) : Konfig, Layer by root {
     
-    // TODO: Make it changeable or something.
-    override val provider: Provider = JsonProvider(this)
-    
     init {
-        //mapper.registerKotlinModule()
+        // a provider class should always be inheriting from the AbstractProvider, and by doing this we provide
+        // the user with an immutable view of the 'config' property.
+        (provider as AbstractProvider).config = this
     }
-    
-    override fun toString(): String = "Konfig(name='$name', file='$file', root=$root)"
-    
-    override fun equals(other: Any?): Boolean = when {
-        this === other -> true
-        other !is KonfigImpl -> false
-        name != other.name -> false
-        file != other.file -> false
-        root != other.root -> false
-        settings != other.settings -> false
-        provider != other.provider -> false
-        else -> true
-    }
-    
-    override fun hashCode(): Int = Objects.hash(name, file, root, settings, provider)
-    
 }
+
+/**
+ * Converts the Java definitions of generic variance to the kotlin ones.
+ *
+ * `"? extends ..."` -> `"out ..."`
+ *
+ * `"? super ..."` -> `"in ..."`
+ *
+ * @receiver the [Type] instance to convert the [typeName][Type.getTypeName] of
+ */
+// not sure if there's a way to just convert a 'Type' into a 'KType', because I'm pretty sure the output would be
+// properly converted automatically then.
+internal val Type.kotlinTypeName: String get() = this.typeName.replace("? extends", "out").replace("? super", "in")
 
 internal val Class<*>.isKotlinClass: Boolean
     get() = this.declaredAnnotations.any {
