@@ -38,6 +38,9 @@ data class KonfigSettings private constructor(
      *
      * This is mainly used for the output of the [Entry.javaType] property in the configuration file.
      *
+     * Note that this is *strictly* for the JSON output mode, in the XML mode, references to what class the entry is
+     * are needed, and the system will fail if they are not present.
+     *
      * ([KOTLIN][GenericPrintingStyle.KOTLIN] by default)
      */
     val genericPrintingStyle: GenericPrintingStyle = GenericPrintingStyle.KOTLIN,
