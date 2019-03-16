@@ -17,7 +17,7 @@ project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
 project.version = "0.1.0"
 val artifactName = "kanon.konfig"
-val gitUrl = "URL_TO_GIT_REPO"
+val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
 
 // General Tasks
 repositories {
