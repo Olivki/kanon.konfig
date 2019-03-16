@@ -211,7 +211,9 @@ interface Konfig : Layer {
  *
  * As this function does not ask for a explicit [root] layer, one will be created from this name.
  */
-fun configOf(name: String, file: Path): Konfig = Konfig(name, file)
+@JvmOverloads
+fun konfigOf(name: String, file: Path, provider: Provider = JsonProvider()): Konfig =
+    Konfig(name, file, provider = provider)
 
 /**
  * Creates a new [Konfig] from the specified [name], and applies the specified [settings] to it.
@@ -221,8 +223,13 @@ fun configOf(name: String, file: Path): Konfig = Konfig(name, file)
  * As this function does not ask for a explicit [root] layer, one will be created from this name.
  * @param [settings] The custom settings to create the config with.
  */
-fun configOf(name: String, file: Path, settings: KonfigSettings.() -> Unit): Konfig =
-    Konfig(name, file, settings = KonfigSettings.default.apply(settings))
+@JvmOverloads
+fun konfigOf(
+    name: String,
+    file: Path,
+    provider: Provider = JsonProvider(),
+    settings: KonfigSettings.() -> Unit
+): Konfig = Konfig(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
 
 /**
  * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -232,7 +239,9 @@ fun configOf(name: String, file: Path, settings: KonfigSettings.() -> Unit): Kon
  * The newly created configuration will inherit everything from this `layer`, even it's name and any sub-layers
  * already connected to it.
  */
-fun configFrom(layer: Layer, file: Path): Konfig = Konfig(layer, file)
+@JvmOverloads
+fun konfigFrom(layer: Layer, file: Path, provider: Provider = JsonProvider()): Konfig =
+    Konfig(layer, file, provider = provider)
 
 /**
  * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified [settings] to
@@ -244,8 +253,13 @@ fun configFrom(layer: Layer, file: Path): Konfig = Konfig(layer, file)
  * already connected to it.
  * @param [settings] The custom settings to create the config with.
  */
-fun configFrom(layer: Layer, file: Path, settings: KonfigSettings.() -> Unit): Konfig =
-    Konfig(layer, file, settings = KonfigSettings.default.apply(settings))
+@JvmOverloads
+fun konfigFrom(
+    layer: Layer,
+    file: Path,
+    provider: Provider = JsonProvider(),
+    settings: KonfigSettings.() -> Unit
+): Konfig = Konfig(layer, file, settings = KonfigSettings.default.apply(settings), provider = provider)
 
 /**
  * An implementation of [Konfig].
