@@ -378,7 +378,7 @@ sealed class Entry<V : Any>(type: Type?) {
                     @Suppress("UNCHECKED_CAST")
                     return _value as V
                 }
-    
+            
             override fun reset() =
                 throw IllegalAccessException("Illegal attempt to invoke 'reset' on a value that is not mutable.")
             
@@ -405,7 +405,7 @@ sealed class Entry<V : Any>(type: Type?) {
              * Returns the result of invoking [closure].
              */
             val value: V get() = closure()
-    
+            
             override fun reset() =
                 throw IllegalAccessException("Illegal attempt to invoke 'reset' on a value that is not mutable.")
         }

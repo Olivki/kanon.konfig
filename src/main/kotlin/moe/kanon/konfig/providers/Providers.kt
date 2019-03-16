@@ -196,8 +196,6 @@ class JsonProvider : AbstractProvider() {
         file.writeLine(output, options = *arrayOf(StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE))
     }
     
-    override fun <V : Any> valueToString(value: V?): String = gson.toJson(value)
-    
     private fun Layer.createLayers(): JsonObject {
         return Json.obj {
             for ((layerKey, subLayer) in this@createLayers.layers) {
@@ -233,9 +231,14 @@ class JsonProvider : AbstractProvider() {
             if (value is LimitedValue<*>) "range" to gson.toJsonTree((value as LimitedValue<*>).range)
             if (value is LimitedStringValue) "range" to gson.toJsonTree((value as LimitedStringValue).range)
             "value" to gson.toJsonTree(parent.getNullable(key), javaType)
-            if (value.isMutable) "default" to gson.toJsonTree(parent.getNullableDefault(key), javaType)
+            if (value.isMutable && config.settings.printDefaultValue) "default" to gson.toJsonTree(
+                parent.getNullableDefault(key),
+                javaType
+            )
         }
     }
+    
+    override fun <V : Any> valueToString(value: V?): String = gson.toJson(value)
 }
 
 // scrapped for now because no API can handle converting between JSON and XML very well.
@@ -362,11 +365,14 @@ class XmlProvider : AbstractProvider() {
                         "string"
                     )
                     
+                    if (!config.settings.printDefaultValue && valueElement.children.any { it.name == "default" })
+                        valueElement.removeChild("default")
+                    
                     source.addContent(valueElement)
                 }
             }
         }.document.detachRootElement()
     }
     
-    override fun <V : Any> valueToString(value: V?): String = TODO()
+    override fun <V : Any> valueToString(value: V?): String = xStream.toXML(value)
 }
