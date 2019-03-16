@@ -719,7 +719,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [NormalEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> default(name: String? = null, default: V, description: String) =
+    protected inline fun <reified V : Any> normal(name: String? = null, default: V, description: String) =
         object : DelegatedNormalProperty<V>(
             value = default,
             name = name,
