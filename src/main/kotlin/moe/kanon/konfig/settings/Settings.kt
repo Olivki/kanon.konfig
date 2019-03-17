@@ -21,7 +21,9 @@ package moe.kanon.konfig.settings
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.UnknownEntryException
 import moe.kanon.konfig.entries.Entry
+import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
+import moe.kanon.konfig.providers.XmlProvider
 
 @DslMarker
 annotation class KonfigSettingsMarker
@@ -58,7 +60,14 @@ data class KonfigSettings private constructor(
      *
      * (`true` by default)
      */
-    val printDefaultValue: Boolean = true
+    val printDefaultValue: Boolean = true,
+    /**
+     * Determines how the [Konfig.name] property should be printed in the configuration file if the [Konfig.provider]
+     * is set to [XmlProvider].
+     *
+     * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     */
+    val xmlRootNamePlacement: XmlRootNamePlacement = XmlRootNamePlacement.IN_TAG
 ) {
     /**
      * What sort of action the system should take when encountering a unknown [entry][Entry] in the
@@ -93,6 +102,16 @@ data class KonfigSettings private constructor(
      */
     @KonfigSettingsMarker
     fun printDefaultValue(predicate: Boolean): KonfigSettings = this.copy(printDefaultValue = predicate)
+    
+    /**
+     * Determines how the [Konfig.name] property should be printed in the configuration file if the [Konfig.provider]
+     * is set to [XmlProvider].
+     *
+     * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     */
+    @KonfigSettingsMarker
+    fun xmlRootNamePlacement(placement: XmlRootNamePlacement): KonfigSettings =
+        this.copy(xmlRootNamePlacement = placement)
     
     companion object {
         /**
@@ -152,4 +171,22 @@ enum class GenericPrintingStyle {
      * This disables the printing of the `"class"` output in the configuration file.
      */
     DISABLED
+}
+
+/**
+ * Represents a "placement" for the [Konfig.name] property in the root element for the XML provider.
+ */
+enum class XmlRootNamePlacement {
+    /**
+     * The `name` will be set as the name of the tag, i.e;
+     *
+     * A [Konfig] with the name of `"module"` will have a root element that looks like `"<module>...</module>"`
+     */
+    IN_TAG,
+    /**
+     * The `name` will be set as a attribute, i.e;
+     *
+     * A [Konfig] with the name of `"module"` will have a root element that looks like `"<root name="module">...</root>"`
+     */
+    IN_ATTRIBUTE
 }
