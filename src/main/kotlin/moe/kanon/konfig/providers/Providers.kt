@@ -43,7 +43,6 @@ import moe.kanon.konfig.kotlinTypeName
 import moe.kanon.konfig.settings.GenericPrintingStyle.DISABLED
 import moe.kanon.konfig.settings.GenericPrintingStyle.JAVA
 import moe.kanon.konfig.settings.GenericPrintingStyle.KOTLIN
-import moe.kanon.konfig.settings.UnknownEntryBehaviour.CREATE_NEW
 import moe.kanon.konfig.settings.UnknownEntryBehaviour.FAIL
 import moe.kanon.konfig.settings.UnknownEntryBehaviour.IGNORE
 import moe.kanon.xml.ParserElement
@@ -137,7 +136,6 @@ class JsonProvider : AbstractProvider() {
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(key, config.path, config)
                     IGNORE -> continue@loop
-                    CREATE_NEW -> TODO()
                 }
             }
             
@@ -165,7 +163,6 @@ class JsonProvider : AbstractProvider() {
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(key, currentLayer.path, config)
                     IGNORE -> continue@loop
-                    CREATE_NEW -> TODO()
                 }
             }
             
@@ -295,7 +292,6 @@ class XmlProvider : AbstractProvider() {
         val entry: Entry<Any> = currentLayer.getEntryOrNull(name) ?: when (config.settings.onUnknownEntry) {
             FAIL -> throw UnknownEntryException.create(name, currentLayer.path, config)
             IGNORE -> return
-            CREATE_NEW -> TODO()
         }
         
         if (!entry.value.isMutable) return

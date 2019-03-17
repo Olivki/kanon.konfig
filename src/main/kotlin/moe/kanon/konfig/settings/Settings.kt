@@ -125,14 +125,7 @@ enum class UnknownEntryBehaviour {
     /**
      * The system will quietly continue on as if nothing happened when it encounters an unknown `entry`.
      */
-    IGNORE,
-    /**
-     * The system will attempt to create a new entry from the provided data when it encounters an unknown `entry`,
-     * and if successful it will add it to the layer that the entry resides in.
-     *
-     * TODO: This. Might be removed.
-     */
-    CREATE_NEW
+    IGNORE
 }
 
 /**
