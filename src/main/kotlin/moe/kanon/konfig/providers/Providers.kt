@@ -43,9 +43,9 @@ import moe.kanon.konfig.kotlinTypeName
 import moe.kanon.konfig.settings.GenericPrintingStyle.DISABLED
 import moe.kanon.konfig.settings.GenericPrintingStyle.JAVA
 import moe.kanon.konfig.settings.GenericPrintingStyle.KOTLIN
-import moe.kanon.konfig.settings.UnknownEntryBehaviour.CREATE_NEW
 import moe.kanon.konfig.settings.UnknownEntryBehaviour.FAIL
 import moe.kanon.konfig.settings.UnknownEntryBehaviour.IGNORE
+import moe.kanon.konfig.settings.XmlRootNamePlacement
 import moe.kanon.xml.ParserElement
 import moe.kanon.xml.parseAsDocument
 import moe.kanon.xml.xml
@@ -137,7 +137,6 @@ class JsonProvider : AbstractProvider() {
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(key, config.path, config)
                     IGNORE -> continue@loop
-                    CREATE_NEW -> TODO()
                 }
             }
             
@@ -165,7 +164,6 @@ class JsonProvider : AbstractProvider() {
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(key, currentLayer.path, config)
                     IGNORE -> continue@loop
-                    CREATE_NEW -> TODO()
                 }
             }
             
@@ -253,7 +251,7 @@ class XmlProvider : AbstractProvider() {
     private val xStream = XStream(JDom2Driver())
     
     init {
-        //xStream.allowTypesByRegExp(arrayOf(".*"))
+        //xStream.allowTypesByRegExp(arrayOf(".*")) // to make xStream be quiet
         xStream.alias("pair", Pair::class.java)
         xStream.alias("triple", Triple::class.java)
         xStream.alias("int-range", IntRange::class.java)
@@ -295,7 +293,6 @@ class XmlProvider : AbstractProvider() {
         val entry: Entry<Any> = currentLayer.getEntryOrNull(name) ?: when (config.settings.onUnknownEntry) {
             FAIL -> throw UnknownEntryException.create(name, currentLayer.path, config)
             IGNORE -> return
-            CREATE_NEW -> TODO()
         }
         
         if (!entry.value.isMutable) return
@@ -311,8 +308,9 @@ class XmlProvider : AbstractProvider() {
     
     @Throws(KonfigSerializationException::class)
     override fun saveTo(file: Path) {
-        val document = xml("root") {
-            attributes("name" to config.name)
+        val isRootAttribute = config.settings.xmlRootNamePlacement == XmlRootNamePlacement.IN_ATTRIBUTE
+        val document = xml(if (isRootAttribute) "root" else config.name) {
+            if (isRootAttribute) attributes("name" to config.name)
             
             // adding the root level entries to the document
             root.addContent(config.createEntries().cloneContent())

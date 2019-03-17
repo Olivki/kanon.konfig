@@ -20,7 +20,7 @@ Gradle
   }
   
   dependencies {
-      compile "moe.kanon.konfig:kanon.konfig:1.0.0"
+      compile "moe.kanon.konfig:kanon.konfig:1.1.0"
   }
   ```
 
@@ -32,7 +32,7 @@ Gradle
   }
   
   dependencies {
-      compile(group = "moe.kanon.konfig", name = "kanon.konfig", version = "1.0.0")
+      compile(group = "moe.kanon.konfig", name = "kanon.konfig", version = "1.1.0")
   }
   ```
 
@@ -42,7 +42,7 @@ Maven
 <dependency>
     <groupId>moe.kanon.konfig</groupId>
     <artifactId>kanon.konfig</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <type>pom</type>
 </dependency>
 

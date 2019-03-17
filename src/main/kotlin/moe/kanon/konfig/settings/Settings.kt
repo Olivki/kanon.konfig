@@ -21,11 +21,14 @@ package moe.kanon.konfig.settings
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.UnknownEntryException
 import moe.kanon.konfig.entries.Entry
+import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
+import moe.kanon.konfig.providers.XmlProvider
 
 @DslMarker
 annotation class KonfigSettingsMarker
 
+@KonfigSettingsMarker
 @Suppress("DataClassPrivateConstructor")
 data class KonfigSettings private constructor(
     /**
@@ -58,8 +61,16 @@ data class KonfigSettings private constructor(
      *
      * (`true` by default)
      */
-    val printDefaultValue: Boolean = true
+    val printDefaultValue: Boolean = true,
+    /**
+     * Determines how the [Konfig.name] property should be printed in the configuration file if the [Konfig.provider]
+     * is set to [XmlProvider].
+     *
+     * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     */
+    val xmlRootNamePlacement: XmlRootNamePlacement = XmlRootNamePlacement.IN_TAG
 ) {
+    
     /**
      * What sort of action the system should take when encountering a unknown [entry][Entry] in the
      * [config file][Konfig.file].
@@ -70,7 +81,8 @@ data class KonfigSettings private constructor(
      * ([IGNORE][UnknownEntryBehaviour.IGNORE] by default)
      */
     @KonfigSettingsMarker
-    fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings = this.copy(onUnknownEntry = behaviour)
+    fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings =
+        this.copy(onUnknownEntry = behaviour)
     
     /**
      * The style that the system should use for printing output of generics.
@@ -80,7 +92,8 @@ data class KonfigSettings private constructor(
      * ([KOTLIN][GenericPrintingStyle.KOTLIN] by default)
      */
     @KonfigSettingsMarker
-    fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings = this.copy(genericPrintingStyle = style)
+    fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings =
+        this.copy(genericPrintingStyle = style)
     
     /**
      * Whether or not the system should print the `default` property of the value container for entries when
@@ -92,26 +105,29 @@ data class KonfigSettings private constructor(
      * (`true` by default)
      */
     @KonfigSettingsMarker
-    fun printDefaultValue(predicate: Boolean): KonfigSettings = this.copy(printDefaultValue = predicate)
+    fun printDefaultValue(predicate: Boolean): KonfigSettings =
+        this.copy(printDefaultValue = predicate)
+    
+    /**
+     * Determines how the [Konfig.name] property should be printed in the configuration file if the [Konfig.provider]
+     * is set to [XmlProvider].
+     *
+     * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     */
+    @KonfigSettingsMarker
+    fun xmlRootNamePlacement(placement: XmlRootNamePlacement): KonfigSettings =
+        this.copy(xmlRootNamePlacement = placement)
     
     companion object {
         /**
          * The default settings used by the system.
          */
         @JvmStatic
-        val default: KonfigSettings = KonfigSettings()
+        @KonfigSettingsMarker
+        val default: KonfigSettings
+            get() = KonfigSettings()
     }
 }
-
-/**
- * Creates a [KonfigSettings] instance from the values set in the specified [closure].
- *
- * The [closure] is invoked on the [KonfigSettings.default] instance, so if no values are specified, the returned
- * `KonfigSettings` instance will be that of the `default` one.
- */
-@KonfigSettingsMarker
-inline fun createKonfigSettings(closure: KonfigSettings.() -> Unit = {}): KonfigSettings =
-    KonfigSettings.default.apply(closure)
 
 /**
  * Represents an action the system will take when encountering an unknown `entry` when traversing the
@@ -125,14 +141,7 @@ enum class UnknownEntryBehaviour {
     /**
      * The system will quietly continue on as if nothing happened when it encounters an unknown `entry`.
      */
-    IGNORE,
-    /**
-     * The system will attempt to create a new entry from the provided data when it encounters an unknown `entry`,
-     * and if successful it will add it to the layer that the entry resides in.
-     *
-     * TODO: This. Might be removed.
-     */
-    CREATE_NEW
+    IGNORE
 }
 
 /**
@@ -159,4 +168,22 @@ enum class GenericPrintingStyle {
      * This disables the printing of the `"class"` output in the configuration file.
      */
     DISABLED
+}
+
+/**
+ * Represents a "placement" for the [Konfig.name] property in the root element for the XML provider.
+ */
+enum class XmlRootNamePlacement {
+    /**
+     * The `name` will be set as the name of the tag, i.e;
+     *
+     * A [Konfig] with the name of `"module"` will have a root element that looks like `"<module>...</module>"`
+     */
+    IN_TAG,
+    /**
+     * The `name` will be set as a attribute, i.e;
+     *
+     * A [Konfig] with the name of `"module"` will have a root element that looks like `"<root name="module">...</root>"`
+     */
+    IN_ATTRIBUTE
 }

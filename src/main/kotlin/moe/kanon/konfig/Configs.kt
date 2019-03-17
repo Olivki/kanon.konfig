@@ -121,28 +121,9 @@ interface Konfig : Layer {
         operator fun invoke(
             name: String,
             file: Path,
-            settings: KonfigSettings,
+            settings: KonfigSettings = KonfigSettings.default,
             provider: Provider = JsonProvider()
         ): AbstractKonfig = KonfigImpl(name, file, settings = settings, provider = provider)
-        
-        /**
-         * Creates a new [Konfig] from the specified [name], and applies the specified [settings] to the newly
-         * created instance.
-         *
-         * @param [name] The name of the configuration.
-         *
-         * As this function does not ask for a explicit [root] layer, one will be created from this name.
-         * @param [settings] The custom settings to apply.
-         */
-        @JvmSynthetic
-        @JvmName("create")
-        operator fun invoke(
-            name: String,
-            file: Path,
-            provider: Provider = JsonProvider(),
-            settings: KonfigSettings.() -> Unit
-        ): AbstractKonfig =
-            KonfigImpl(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -166,8 +147,8 @@ interface Konfig : Layer {
          * ```java
          *  final Layer layer = ...
          *  final Konfig.Settings settings = Konfig.Settings.getDefault()
-         *                                                  .shouldPrintEntryType(false)
-         *                                                  .onUnknownEntry(CREATE_NEW);
+         *                                                  .printDefaultValue(false)
+         *                                                  .onUnknownEntry(IGNORE);
          *  final Konfig config = Konfig.from(layer, settings);
          * ```
          *
@@ -182,41 +163,11 @@ interface Konfig : Layer {
         operator fun invoke(
             layer: Layer,
             file: Path,
-            settings: KonfigSettings,
+            settings: KonfigSettings = KonfigSettings.default,
             provider: Provider = JsonProvider()
         ): AbstractKonfig = KonfigImpl(layer.name, file, layer, settings, provider)
-        
-        /**
-         * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified
-         * [settings] to the newly created instance.
-         *
-         * @param [layer] The [layer][Layer] to act as a [root] `layer` for the newly created configuration.
-         *
-         * The newly created configuration will inherit everything from this `layer`, even it's name and any sub-layers
-         * already connected to it.
-         * @param [settings] The custom settings to apply.
-         */
-        @JvmSynthetic
-        @JvmName("from")
-        operator fun invoke(
-            layer: Layer,
-            file: Path,
-            provider: Provider = JsonProvider(),
-            settings: KonfigSettings.() -> Unit
-        ): AbstractKonfig = KonfigImpl(layer.name, file, layer, KonfigSettings.default.apply(settings), provider)
     }
 }
-
-/**
- * Creates a new [Konfig] from the specified [name].
- *
- * @param [name] The name of the configuration.
- *
- * As this function does not ask for a explicit [root] layer, one will be created from this name.
- */
-@JvmOverloads
-fun konfigOf(name: String, file: Path, provider: Provider = JsonProvider()): AbstractKonfig =
-    Konfig(name, file, provider = provider)
 
 /**
  * Creates a new [Konfig] from the specified [name], and applies the specified [settings] to it.
@@ -231,20 +182,8 @@ fun konfigOf(
     name: String,
     file: Path,
     provider: Provider = JsonProvider(),
-    settings: KonfigSettings.() -> Unit
-): AbstractKonfig = Konfig(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
-
-/**
- * Creates a new [Konfig] which inherits everything from the specified [layer].
- *
- * @param [layer] The [layer][Layer] to act as a [root] `layer` for the newly created configuration.
- *
- * The newly created configuration will inherit everything from this `layer`, even it's name and any sub-layers
- * already connected to it.
- */
-@JvmOverloads
-fun konfigFrom(layer: Layer, file: Path, provider: Provider = JsonProvider()): Konfig =
-    Konfig(layer, file, provider = provider)
+    settings: KonfigSettings = KonfigSettings.default
+): AbstractKonfig = Konfig(name, file, settings = settings, provider = provider)
 
 /**
  * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified [settings] to
@@ -261,8 +200,8 @@ fun konfigFrom(
     layer: Layer,
     file: Path,
     provider: Provider = JsonProvider(),
-    settings: KonfigSettings.() -> Unit
-): Konfig = Konfig(layer, file, settings = KonfigSettings.default.apply(settings), provider = provider)
+    settings: KonfigSettings = KonfigSettings.default
+): Konfig = Konfig(layer, file, settings = settings, provider = provider)
 
 @JvmOverloads
 @KonfigContainer
