@@ -19,3 +19,6 @@
 package moe.kanon.konfig.dsl
 
 class DuplicateDslEntryException(name: String) : Exception("No duplicates of <$name> is allowed in the DSL.")
+
+class MissingFunctionsInDslException(name: String, path: String) :
+    Exception("The DSL for <$name> in <$path> is faulty as it has not implemented all the required functions.")

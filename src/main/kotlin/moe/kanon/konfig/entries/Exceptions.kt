@@ -16,7 +16,8 @@
 
 package moe.kanon.konfig.entries
 
-open class ValueOutsideOfRangeException(message: String) : Exception(message) {
+open class ValueOutsideOfRangeException(message: String, val value: Any, val range: ClosedRange<*>) :
+    Exception(message) {
     companion object {
         /**
          * Creates a new [ValueOutsideOfRangeException] with a [message][ValueOutsideOfRangeException.message]
@@ -27,8 +28,8 @@ open class ValueOutsideOfRangeException(message: String) : Exception(message) {
          */
         @JvmStatic
         fun <V : Comparable<V>> create(value: V, range: ClosedRange<V>): ValueOutsideOfRangeException =
-            ValueOutsideOfRangeException("The given value <$value> is outside of the set range <$range>.")
-    
+            ValueOutsideOfRangeException("The given value <$value> is outside of the set range <$range>", value, range)
+        
         /**
          * Creates a new [ValueOutsideOfRangeException] with a [message][ValueOutsideOfRangeException.message]
          * populated by the specified [value] and [range].
@@ -38,7 +39,11 @@ open class ValueOutsideOfRangeException(message: String) : Exception(message) {
          */
         @JvmStatic
         fun create(value: String, range: IntRange): ValueOutsideOfRangeException =
-            ValueOutsideOfRangeException("The given value <$value> is outside of the set range <$range>.")
+            ValueOutsideOfRangeException(
+                "The length <${value.length}> of the given string <'$value'> is outside of the set range <$range>",
+                value,
+                range
+            )
         
     }
 }

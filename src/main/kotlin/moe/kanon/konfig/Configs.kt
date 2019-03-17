@@ -19,6 +19,8 @@
 package moe.kanon.konfig
 
 import com.google.gson.internal.`$Gson$Types`
+import moe.kanon.konfig.dsl.KonfigContainer
+import moe.kanon.konfig.dsl.LayerContainer
 import moe.kanon.konfig.providers.AbstractProvider
 import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
@@ -94,7 +96,7 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("create")
-        operator fun invoke(name: String, file: Path, provider: Provider = JsonProvider()): Konfig =
+        operator fun invoke(name: String, file: Path, provider: Provider = JsonProvider()): AbstractKonfig =
             KonfigImpl(name, file, provider = provider)
         
         /**
@@ -121,7 +123,7 @@ interface Konfig : Layer {
             file: Path,
             settings: KonfigSettings,
             provider: Provider = JsonProvider()
-        ): Konfig = KonfigImpl(name, file, settings = settings, provider = provider)
+        ): AbstractKonfig = KonfigImpl(name, file, settings = settings, provider = provider)
         
         /**
          * Creates a new [Konfig] from the specified [name], and applies the specified [settings] to the newly
@@ -139,7 +141,8 @@ interface Konfig : Layer {
             file: Path,
             provider: Provider = JsonProvider(),
             settings: KonfigSettings.() -> Unit
-        ): Konfig = KonfigImpl(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
+        ): AbstractKonfig =
+            KonfigImpl(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -151,7 +154,7 @@ interface Konfig : Layer {
          */
         @JvmStatic
         @JvmName("from")
-        operator fun invoke(layer: Layer, file: Path, provider: Provider = JsonProvider()): Konfig =
+        operator fun invoke(layer: Layer, file: Path, provider: Provider = JsonProvider()): AbstractKonfig =
             KonfigImpl(layer.name, file, layer, provider = provider)
         
         /**
@@ -181,7 +184,7 @@ interface Konfig : Layer {
             file: Path,
             settings: KonfigSettings,
             provider: Provider = JsonProvider()
-        ): Konfig = KonfigImpl(layer.name, file, layer, settings, provider)
+        ): AbstractKonfig = KonfigImpl(layer.name, file, layer, settings, provider)
         
         /**
          * Creates a new [Konfig] which inherits everything from the specified [layer], and applies the specified
@@ -200,7 +203,7 @@ interface Konfig : Layer {
             file: Path,
             provider: Provider = JsonProvider(),
             settings: KonfigSettings.() -> Unit
-        ): Konfig = KonfigImpl(layer.name, file, layer, KonfigSettings.default.apply(settings), provider)
+        ): AbstractKonfig = KonfigImpl(layer.name, file, layer, KonfigSettings.default.apply(settings), provider)
     }
 }
 
@@ -212,7 +215,7 @@ interface Konfig : Layer {
  * As this function does not ask for a explicit [root] layer, one will be created from this name.
  */
 @JvmOverloads
-fun konfigOf(name: String, file: Path, provider: Provider = JsonProvider()): Konfig =
+fun konfigOf(name: String, file: Path, provider: Provider = JsonProvider()): AbstractKonfig =
     Konfig(name, file, provider = provider)
 
 /**
@@ -229,7 +232,7 @@ fun konfigOf(
     file: Path,
     provider: Provider = JsonProvider(),
     settings: KonfigSettings.() -> Unit
-): Konfig = Konfig(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
+): AbstractKonfig = Konfig(name, file, settings = KonfigSettings.default.apply(settings), provider = provider)
 
 /**
  * Creates a new [Konfig] which inherits everything from the specified [layer].
@@ -261,6 +264,52 @@ fun konfigFrom(
     settings: KonfigSettings.() -> Unit
 ): Konfig = Konfig(layer, file, settings = KonfigSettings.default.apply(settings), provider = provider)
 
+@JvmOverloads
+@KonfigContainer
+inline fun createKonfig(
+    name: String,
+    file: Path,
+    settings: KonfigSettings = KonfigSettings.default,
+    provider: Provider = JsonProvider(),
+    closure: LayerContainer.() -> Unit
+): AbstractKonfig {
+    val container = LayerContainer(name).apply(closure)
+    return KonfigImpl(
+        name,
+        file,
+        root = container.layer,
+        settings = settings,
+        provider = provider,
+        delegateContainer = container
+    )
+}
+
+abstract class AbstractKonfig : Konfig {
+    
+    /**
+     * The underlying [LayerContainer] of the [root] layer of `this` konfig.
+     */
+    abstract val container: LayerContainer
+    
+    /**
+     * Scopes into the underlying [LayerContainer] of `this` konfig.
+     *
+     * This serves as a direct entry-point into the DSL for creating entries.
+     */
+    @JvmSynthetic
+    inline fun modify(closure: LayerContainer.() -> Unit) {
+        container.apply(closure)
+    }
+    
+    /**
+     * Creates and adds a [Layer] to `this` layer from the specified [name] and [closure].
+     */
+    @JvmSynthetic
+    inline fun addLayer(name: String, closure: LayerContainer.() -> Unit) {
+        container.addLayer(name, closure)
+    }
+}
+
 /**
  * An implementation of [Konfig].
  *
@@ -271,8 +320,11 @@ data class KonfigImpl @JvmOverloads constructor(
     override val file: Path,
     override val root: Layer = KonfigLayer(name),
     override val settings: KonfigSettings = KonfigSettings.default,
-    override val provider: Provider = JsonProvider()
-) : Konfig, Layer by root {
+    override val provider: Provider = JsonProvider(),
+    private val delegateContainer: LayerContainer? = null
+) : AbstractKonfig(), Layer by root {
+    
+    override val container: LayerContainer = delegateContainer ?: LayerContainer(name, delegate = this)
     
     init {
         // a provider class should always be inheriting from the AbstractProvider, and by doing this we provide
