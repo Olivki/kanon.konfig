@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
+@file:JvmName("KonfigSettingsFactory")
+
 package moe.kanon.konfig.settings
 
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.UnknownEntryException
 import moe.kanon.konfig.entries.Entry
 import moe.kanon.konfig.providers.Provider
+
+@DslMarker
+annotation class KonfigSettingsMarker
 
 @Suppress("DataClassPrivateConstructor")
 data class KonfigSettings private constructor(
@@ -64,6 +69,7 @@ data class KonfigSettings private constructor(
      *
      * ([IGNORE][UnknownEntryBehaviour.IGNORE] by default)
      */
+    @KonfigSettingsMarker
     fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings = this.copy(onUnknownEntry = behaviour)
     
     /**
@@ -73,6 +79,7 @@ data class KonfigSettings private constructor(
      *
      * ([KOTLIN][GenericPrintingStyle.KOTLIN] by default)
      */
+    @KonfigSettingsMarker
     fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings = this.copy(genericPrintingStyle = style)
     
     /**
@@ -84,6 +91,7 @@ data class KonfigSettings private constructor(
      *
      * (`true` by default)
      */
+    @KonfigSettingsMarker
     fun printDefaultValue(predicate: Boolean): KonfigSettings = this.copy(printDefaultValue = predicate)
     
     companion object {
@@ -94,6 +102,16 @@ data class KonfigSettings private constructor(
         val default: KonfigSettings = KonfigSettings()
     }
 }
+
+/**
+ * Creates a [KonfigSettings] instance from the values set in the specified [closure].
+ *
+ * The [closure] is invoked on the [KonfigSettings.default] instance, so if no values are specified, the returned
+ * `KonfigSettings` instance will be that of the `default` one.
+ */
+@KonfigSettingsMarker
+inline fun createKonfigSettings(closure: KonfigSettings.() -> Unit = {}): KonfigSettings =
+    KonfigSettings.default.apply(closure)
 
 /**
  * Represents an action the system will take when encountering an unknown `entry` when traversing the
