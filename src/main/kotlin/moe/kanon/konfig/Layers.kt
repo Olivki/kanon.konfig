@@ -846,7 +846,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [NullableEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> nullable(
+    inline fun <reified V : Any> nullable(
         name: String? = null,
         description: String,
         default: V?,
@@ -862,7 +862,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [NormalEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> normal(
+    inline fun <reified V : Any> normal(
         name: String? = null,
         description: String,
         default: V,
@@ -878,7 +878,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [LimitedEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Comparable<V>> limited(
+    inline fun <reified V : Comparable<V>> limited(
         name: String? = null,
         description: String,
         range: ClosedRange<V>,
@@ -895,7 +895,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [LimitedStringEntry] and automagically adding it to `this` layer.
      */
-    protected fun limited(
+    fun limited(
         name: String? = null,
         description: String,
         range: IntRange,
@@ -913,7 +913,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [ConstantEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> constant(name: String? = null, description: String, value: V) =
+    inline fun <reified V : Any> constant(name: String? = null, description: String, value: V) =
         object : DelegatedConstantProperty<V>(
             name = name,
             description = description,
@@ -923,7 +923,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [LazyEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> lazy(name: String? = null, description: String, noinline closure: () -> V) =
+    inline fun <reified V : Any> lazy(name: String? = null, description: String, noinline closure: () -> V) =
         object : DelegatedLazyProperty<V>(
             name = name,
             description = description,
@@ -933,7 +933,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [DynamicEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> dynamic(
+    inline fun <reified V : Any> dynamic(
         name: String? = null,
         description: String,
         noinline closure: () -> V
