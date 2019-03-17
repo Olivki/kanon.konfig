@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm").version("1.3.21")
     
-    id("org.jetbrains.kotlin.plugin.noarg").version("1.3.21") // for jaxb
     id("com.adarshr.test-logger").version("1.6.0") // For pretty-printing for tests.
     id("com.jfrog.bintray").version("1.8.4") // For publishing to BinTray.
     id("org.jetbrains.dokka").version("0.9.17") // The KDoc engine.
@@ -16,9 +15,9 @@ plugins {
 // Project Specific Variables
 project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
-project.version = "0.1.0"
+project.version = "1.0.0"
 val artifactName = "kanon.konfig"
-val gitUrl = "URL_TO_GIT_REPO"
+val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
 
 // General Tasks
 repositories {
@@ -32,13 +31,15 @@ dependencies {
     // Kotlin
     implementation(kotlin("stdlib-jdk8"))
     
-    // google stuff
     implementation(group = "com.google.code.gson", name = "gson", version = "2.8.5")
     implementation(group = "com.github.mgrzeszczak", name = "json-dsl", version = "1.1")
     implementation(group = "com.github.salomonbrys.kotson", name = "kotson", version = "2.5.0")
+    implementation(group = "com.google.guava", name = "guava", version = "27.1-jre")
+    implementation(group = "com.thoughtworks.xstream", name = "xstream", version = "1.4.11.1")
     
     // Kanon
     implementation(group = "moe.kanon.kommons", name = "kanon.kommons", version = "0.6.0-alpha")
+    implementation(group = "moe.kanon.xml", name = "kanon.xml", version = "2.0.0")
     
     // Test Dependencies
     testImplementation(group = "io.kotlintest", name = "kotlintest-runner-junit5", version = "3.1.11")
@@ -68,10 +69,6 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Wrapper> {
     gradleVersion = "4.10"
     distributionType = Wrapper.DistributionType.BIN
-}
-
-noArg {
-    annotation("javax.xml.bind.annotation.XmlRootElement")
 }
 
 // Dokka Tasks

@@ -1,6 +1,12 @@
-## PROJECT_NAME
+## kanon.konfig
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras ligula leo, sodales dignissim hendrerit ac, fringilla ut massa. Praesent in arcu nunc. Mauris suscipit fermentum varius. Quisque nec ex dapibus orci accumsan egestas. Maecenas consectetur quis magna ac dapibus. Mauris condimentum in libero quis pellentesque. Sed gravida mollis lacinia. Nulla vel metus nec nulla venenatis dapibus.
+A "configuration" library/framework for Kotlin designed to be "user-first" rather than "dev-first".
+
+This library is partially inspired from the great [konf](https://github.com/uchuhimo/konf) library, reason for making this library is because while konf is great, it's very heavily catered towards being "dev-first", and what I needed was something that was catered towards "user-first", that is, producing a configuration file which you know will be edited by a human manually, and for that konf does not really do the job very nicely. My other "problem" with konf is that essentially the only way to create `Items` is through property delegation, which can get very ugly and cumbersome if you're trying to create a configuration for a structure where you *won't* always have access to a `object` reference of it. And thus this library was born.
+
+kanon.konfig is mainly made just for personal use, it is however thoroughly documented, in case someone else would have any use for it. As for actual non-kotlindoc documentation, there is none, and most likely won't be any, but the kotlindocs should be more than enough to give anyone an understanding of how to use this library.
+
+**NOTE**: kanon.konfig will most likely *not* work very well if used from Java, as it *heavily* relies on Kotlins `reified` generics and the `inline` mechanic and its smart casting, while it is not impossible to use this library from the Java side, the experience will most likely not be very good, and certain parts of the library have been designed to *deliberately* not work when used from Java, due to several reasons.
 
 ## Installation
 
@@ -10,12 +16,11 @@ Gradle
 
   ```groovy
   repositories {
-      // maven { url "https://dl.bintray.com/olivki/kanon" } // If not yet accepted into jCenter.
-    	// jcenter() // If accepted into jCenter.
+      maven { url "https://dl.bintray.com/olivki/kanon" }
   }
   
   dependencies {
-      compile "GROUP_ID:ARTIFACT_ID:LATEST_VERSION"
+      compile "moe.kanon.konfig:kanon.konfig:1.0.0"
   }
   ```
 
@@ -23,12 +28,11 @@ Gradle
 
   ```kotlin
   repositories {
-      // maven(url = "https://dl.bintray.com/olivki/kanon") // If not yet accepted into jCenter.
-      // jcenter() // If accepted into jCenter.
+      maven(url = "https://dl.bintray.com/olivki/kanon")
   }
   
   dependencies {
-      compile(group = "GROUP_ID", name = "ARTIFACT_ID", version = "LATEST_VERSION")
+      compile(group = "moe.kanon.konfig", name = "kanon.konfig", version = "1.0.0")
   }
   ```
 
@@ -36,9 +40,9 @@ Maven
 
 ```xml
 <dependency>
-    <groupId>GROUP_ID</groupId>
-    <artifactId>ARTIFACT_ID</artifactId>
-    <version>LATEST_VERSION</version>
+    <groupId>moe.kanon.konfig</groupId>
+    <artifactId>kanon.konfig</artifactId>
+    <version>1.0.0</version>
     <type>pom</type>
 </dependency>
 
@@ -47,7 +51,7 @@ Maven
 ## License
 
 ````
-Copyright {CURRENT_YEAR} Oliver Berg
+Copyright 2019 Oliver Berg
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

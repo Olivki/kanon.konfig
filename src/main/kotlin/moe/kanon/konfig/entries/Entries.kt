@@ -19,6 +19,9 @@
 
 package moe.kanon.konfig.entries
 
+import com.thoughtworks.xstream.annotations.XStreamAlias
+import com.thoughtworks.xstream.annotations.XStreamAsAttribute
+import com.thoughtworks.xstream.annotations.XStreamOmitField
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.Layer
 import moe.kanon.konfig.superClassTypeParameter
@@ -101,13 +104,19 @@ sealed class Entry<V : Any>(type: Type?) {
         "Entry(value=$value, name='$name', description='$description', parent=$parent, javaType=$javaType)"
     
     sealed class Value(
-        val name: String,
-        val isMutable: Boolean,
-        val shouldDeserialize: Boolean,
-        val javaType: Type
+        @XStreamAlias("type")
+        @XStreamAsAttribute val name: String,
+        @XStreamOmitField val isMutable: Boolean,
+        @XStreamOmitField val shouldDeserialize: Boolean,
+        @XStreamOmitField val javaType: Type
     ) {
-        //@get:JsonIgnore val classType =
-        //    TypeFactory.defaultInstance().constructParametricType(this::class.java, javaType)
+        
+        /**
+         * Sets the `value` property of `this` value to the value of the `default` property.
+         *
+         * @throws [IllegalAccessException] If invoked on a value where [isMutable] is `false`.
+         */
+        abstract fun reset()
         
         /**
          * A container that holds a mutable value that's nullable.
@@ -115,6 +124,7 @@ sealed class Entry<V : Any>(type: Type?) {
          * @property [value] The `value` stored by this container.
          * @property [default] The default-value of the [value].
          */
+        @XStreamAlias("container")
         class Nullable<V : Any?>(
             var value: V?,
             val default: V?,
@@ -125,6 +135,10 @@ sealed class Entry<V : Any>(type: Type?) {
             shouldDeserialize = true,
             javaType = javaType
         ) {
+            
+            override fun reset() {
+                value = default
+            }
             
             override fun equals(other: Any?): Boolean = when {
                 this === other -> true
@@ -145,6 +159,7 @@ sealed class Entry<V : Any>(type: Type?) {
          * @property [value] The `value` stored by this container.
          * @property [default] The default-value of the [value].
          */
+        @XStreamAlias("container")
         class Normal<V : Any>(
             var value: V,
             val default: V,
@@ -155,6 +170,10 @@ sealed class Entry<V : Any>(type: Type?) {
             shouldDeserialize = true,
             javaType = javaType
         ) {
+            override fun reset() {
+                value = default
+            }
+            
             override fun equals(other: Any?): Boolean = when {
                 this === other -> true
                 other !is Normal<*> -> false
@@ -176,10 +195,11 @@ sealed class Entry<V : Any>(type: Type?) {
          * @property [default] The default-value of the [value].
          * @property [range] The range to limit the [value] to.
          */
+        @XStreamAlias("container")
         class Limited<V : Comparable<V>>(
             value: V,
             val default: V,
-            val range: ClosedRange<V>,
+            @XStreamOmitField val range: ClosedRange<V>,
             javaType: Type
         ) : Value(
             name = "limited",
@@ -200,6 +220,10 @@ sealed class Entry<V : Any>(type: Type?) {
                     if (newValue !in range) throw ValueOutsideOfRangeException.create(newValue, range)
                     field = newValue
                 }
+            
+            override fun reset() {
+                value = default
+            }
             
             /**
              * Returns the [value] property of `this` [Value].
@@ -238,10 +262,11 @@ sealed class Entry<V : Any>(type: Type?) {
          * @property [default] The default-value of the [value].
          * @property [range] The range to limit the [value] to.
          */
+        @XStreamAlias("container")
         class LimitedString(
             value: String,
             val default: String,
-            val range: IntRange,
+            @XStreamOmitField val range: IntRange,
             javaType: Type
         ) :
             Value(
@@ -258,11 +283,16 @@ sealed class Entry<V : Any>(type: Type?) {
              * [ValueOutsideOfRangeException] if the `newValue` does not fit in it.
              */
             @set:Throws(ValueOutsideOfRangeException::class)
+            //@XStreamAlias("svalue")
             var value: String = value
                 set(newValue) {
                     if (newValue.length !in range) throw ValueOutsideOfRangeException.create(newValue, range)
                     field = newValue
                 }
+            
+            override fun reset() {
+                value = default
+            }
             
             /**
              * Returns the [value] property of `this` [Value].
@@ -298,12 +328,16 @@ sealed class Entry<V : Any>(type: Type?) {
          *
          * @property [value] The `value` stored by this container.
          */
+        @XStreamAlias("container")
         class Constant<V : Any>(val value: V, javaType: Type) : Value(
             name = "constant",
             isMutable = false,
             shouldDeserialize = true,
             javaType = javaType
         ) {
+            override fun reset() =
+                throw IllegalAccessException("Illegal attempt to invoke 'reset' on a value that is not mutable.")
+            
             override fun equals(other: Any?): Boolean = when {
                 this === other -> true
                 other !is Constant<*> -> false
@@ -321,6 +355,7 @@ sealed class Entry<V : Any>(type: Type?) {
          *
          * Due to the nature of this container, this does *not* get saved into the [config file][Konfig.file].
          */
+        @XStreamAlias("container")
         class Lazy<V : Any>(initializer: () -> V, javaType: Type) : Value(
             name = "lazy",
             isMutable = false,
@@ -344,6 +379,9 @@ sealed class Entry<V : Any>(type: Type?) {
                     return _value as V
                 }
             
+            override fun reset() =
+                throw IllegalAccessException("Illegal attempt to invoke 'reset' on a value that is not mutable.")
+            
             fun isInitialized(): Boolean = _value != UNINITIALIZED_VALUE
             
             override fun toString(): String =
@@ -355,6 +393,7 @@ sealed class Entry<V : Any>(type: Type?) {
          *
          * Due to the nature of this container, this does *not* get saved into the [config file][Konfig.file].
          */
+        @XStreamAlias("container")
         class Dynamic<V : Any>(private val closure: () -> V, javaType: Type) : Value(
             name = "dynamic",
             isMutable = false,
@@ -366,6 +405,9 @@ sealed class Entry<V : Any>(type: Type?) {
              * Returns the result of invoking [closure].
              */
             val value: V get() = closure()
+            
+            override fun reset() =
+                throw IllegalAccessException("Illegal attempt to invoke 'reset' on a value that is not mutable.")
         }
     }
 }

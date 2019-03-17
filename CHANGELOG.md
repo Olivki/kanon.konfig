@@ -1,1 +1,3 @@
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras ligula leo, sodales dignissim hendrerit ac, fringilla ut massa. Praesent in arcu nunc. Mauris suscipit fermentum varius. Quisque nec ex dapibus orci accumsan egestas. Maecenas consectetur quis magna ac dapibus. Mauris condimentum in libero quis pellentesque. Sed gravida mollis lacinia. Nulla vel metus nec nulla venenatis dapibus. 
+## 1.0.0 (2019-03-17)
+
+Initial release

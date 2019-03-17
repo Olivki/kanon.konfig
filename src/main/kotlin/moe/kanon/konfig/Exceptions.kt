@@ -108,10 +108,12 @@ open class UnknownEntryException(message: String) : KonfigSerializationException
          * Creates a [UnknownEntryException] with a [message] populated by the specified [entry] and [konfig].
          *
          * @param [entry] The name and some additional info regarding the unknown entry.
+         * @param [layer] The layer that the system is currently on
          * @param [konfig] The konfig for which the file belongs to.
          */
         @JvmStatic
-        fun create(entry: String, konfig: Konfig): UnknownEntryException =
-            UnknownEntryException("Encountered a unknown entry <$entry> when loading the konfig <$konfig>.")
+        fun create(entry: String, layer: String, konfig: Konfig): UnknownEntryException = UnknownEntryException(
+            "Encountered a unknown entry <$entry> in layer <$layer> when loading the konfig <$konfig>"
+        )
     }
 }
