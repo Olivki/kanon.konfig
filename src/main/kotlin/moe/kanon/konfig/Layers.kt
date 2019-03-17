@@ -67,7 +67,20 @@ interface Layer : Iterable<Entry<*>> {
     val path: String
     
     /**
-     * Adds the specified [entry] to `this` storage.
+     * The parent [layer][KonfigLayer] of `this` layer, this will return `null` if `this` layer has no parent.
+     */
+    val parent: Layer
+    
+    /**
+     * Returns whether or not `this` layer has a parent layer.
+     *
+     * If this returns `true`, that means that this layer is *nested*, while if it returns `false` it means that this
+     * layer is top-level.
+     */
+    val hasParent: Boolean
+    
+    /**
+     * Adds the specified [entry] to `this` layer.
      *
      * The `entry` gets stored under it's [name][Entry.name] property.
      *
@@ -76,7 +89,7 @@ interface Layer : Iterable<Entry<*>> {
     fun <V : Any> addEntry(entry: Entry<V>): Layer
     
     /**
-     * Adds the specified [entry] to `this` storage.
+     * Adds the specified [entry] to `this` layer.
      *
      * The `entry` gets stored under it's [name][Entry.name] property.
      *
@@ -88,20 +101,28 @@ interface Layer : Iterable<Entry<*>> {
     fun <V : Any> addEntry(entry: Entry<V>, name: String): Layer
     
     /**
-     * Adds the specified [entry] to `this` storage.
+     * Adds all the entries stored under the specified [entries] to `this` layer.
+     */
+    @JvmDefault
+    fun addEntries(entries: Collection<Entry<*>>): Layer {
+        for (entry in entries) addEntry(entry)
+        return this
+    }
+    
+    /**
+     * Adds the specified [entry] to `this` layer.
      *
      * The `entry` gets stored under it's [name][Entry.name] property.
      *
      * @param [entry] The [Entry] to add to `this` storage.
      */
-    @JvmDefault
     @JvmSynthetic
     operator fun <V : Any> plusAssign(entry: Entry<V>) {
         addEntry(entry)
     }
     
     /**
-     * Removes the entry stored under the specified [path] from `this` storage, or throws a [NoSuchElementException] if
+     * Removes the entry stored under the specified [path] from `this` layer, or throws a [NoSuchElementException] if
      * no entry is found.
      *
      * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
@@ -113,12 +134,13 @@ interface Layer : Iterable<Entry<*>> {
      * is stored under the `name` in the [entries] of that layer.
      *
      * @param [path] The path to the entry to remove.
+     *
      * @throws [NoSuchElementException] If no `entry` in `this` storage is stored under the specified [path].
      */
     fun removeEntry(path: String): Layer
     
     /**
-     * Removes the entry stored under the specified [path] from `this` storage, or throws a [NoSuchElementException] if
+     * Removes the entry stored under the specified [path] from `this` layer, or throws a [NoSuchElementException] if
      * no entry is found.
      *
      * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
@@ -132,7 +154,6 @@ interface Layer : Iterable<Entry<*>> {
      * @param [path] The path to the entry to remove.
      * @throws [NoSuchElementException] If no `entry` in `this` storage is stored under the specified [path].
      */
-    @JvmDefault
     @JvmSynthetic
     operator fun minusAssign(path: String) {
         removeEntry(path)
@@ -164,7 +185,7 @@ interface Layer : Iterable<Entry<*>> {
      */
     @JvmDefault
     fun <V : Any> setValue(path: String, value: V?): Layer {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         val entry = getEntry<V>(_path)
         val _value = entry.value
         
@@ -215,7 +236,6 @@ interface Layer : Iterable<Entry<*>> {
      * @throws [IllegalArgumentException] If the found [Entry] is *not* a [nullable][Entry.Value.Nullable] type, but
      * the specified [value] is `null`.
      */
-    @JvmDefault
     @JvmSynthetic
     operator fun <V : Any> set(path: String, value: V?) {
         setValue(path, value)
@@ -301,7 +321,6 @@ interface Layer : Iterable<Entry<*>> {
      * @see get
      * @see getNullable
      */
-    @JvmDefault
     @JvmSynthetic
     operator fun <V : Any> invoke(path: String): V =
         getNullable(path)
@@ -327,7 +346,7 @@ interface Layer : Iterable<Entry<*>> {
      */
     @JvmDefault
     fun <V : Any> getNullable(path: String): V? {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         return when (val entry = getEntry<V>(_path).value) {
             is NullableValue<*> -> entry.value as V?
             is NormalValue<*> -> entry.value as V
@@ -394,7 +413,7 @@ interface Layer : Iterable<Entry<*>> {
      */
     @JvmDefault
     fun <V : Any> getNullableDefault(path: String): V? {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         return when (val entry = getEntry<V>(_path).value) {
             is NullableValue<*> -> entry.default as V?
             is NormalValue<*> -> entry.default as V
@@ -422,11 +441,11 @@ interface Layer : Iterable<Entry<*>> {
      */
     @JvmDefault
     operator fun contains(path: String): Boolean {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         
         return if ('/' in _path) {
             val name = path.substringAfterLast('/')
-            val layer = getLayer(path.substringBeforeLast('/').sanitizePath(isLayerPath = true))
+            val layer = getLayer(path.substringBeforeLast('/').sanitizePath())
             name in layer.entries
         } else {
             _path in entries
@@ -462,11 +481,11 @@ interface Layer : Iterable<Entry<*>> {
      */
     @JvmDefault
     fun <V : Any> getEntryOrNull(path: String): Entry<V>? {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         
         return if ('/' in _path) {
             val name = path.substringAfterLast('/')
-            val layer = getLayer(path.substringBeforeLast('/').sanitizePath(isLayerPath = true))
+            val layer = getLayer(path.substringBeforeLast('/').sanitizePath())
             layer.entries[name] as? Entry<V>
         } else {
             entries[_path] as? Entry<V>
@@ -503,19 +522,8 @@ interface Layer : Iterable<Entry<*>> {
     
     /**
      * Creates a valid path for storage and retrieval.
-     *
-     * This function enables the user to omit the current layers name from any operations involve the paths, this that
-     * if `this` string is `"layer_two/entry_two"` then the string returned from this function would be
-     * `"layer_one/layer_two/entry_two"`. *(`"layer_one"` here is just used a placeholder for the current layers name.)*
-     *
-     * @param [isLayerPath] Whether or not `this` string is used for retrieving layers.
-     *
-     * If `true` then this function will make sure that the returned string ends with the `'/'` character, to make it
-     * valid as a key for layer retrieval.
-     *
-     * NOTE: This operation would make the returned string invalid for retrieval of values.
      */
-    fun String.sanitizePath(isLayerPath: Boolean): String
+    fun String.sanitizePath(): String
     
     // layers
     
@@ -529,8 +537,96 @@ interface Layer : Iterable<Entry<*>> {
      * `{Layer D}`, if `{Layer E}` then gets added to `{Layer A}` the parent of `{Layer E}` changes from `{Layer D}`
      * to `{Layer A}`. However, any sub-layers of `{Layer E}` will still keep their parent, but their `paths` will all
      * be updated to be correct.
+     *
+     * @return `this` layer
      */
-    fun addLayer(layer: KonfigLayer): Layer
+    fun addLayer(layer: Layer): Layer
+    
+    /**
+     * Adds all the layers contained in the specified [layers].
+     *
+     * When a layer gets added to another layer, the parent of that layer is forcefully changed to the layer that it's
+     * being added to, i.e;
+     *
+     * If `{Layer E}` is originally a sub-layer of `{Layer D}` which means that the parent of `{Layer E}` is
+     * `{Layer D}`, if `{Layer E}` then gets added to `{Layer A}` the parent of `{Layer E}` changes from `{Layer D}`
+     * to `{Layer A}`. However, any sub-layers of `{Layer E}` will still keep their parent, but their `paths` will all
+     * be updated to be correct.
+     *
+     * @return `this` layer
+     */
+    @JvmDefault
+    fun addLayers(layers: Collection<Layer>): Layer {
+        for (layer in layers) addLayer(layer)
+        return this
+    }
+    
+    /**
+     * Creates a new [Layer] from the specified [path] and then adds it to `this` layer.
+     *
+     * This function will create new layers from *all* the non-existent layers in the specified [path].
+     *
+     * Note that the [path] `string` should ***not*** start with the [name] of the layer that it is being added to, as
+     * the system assumes that all layers given in the `path` parameter are *new* entries, i.e;
+     *
+     * Suppose you're invoking this function on a layer called `"green_things"` and you invoke this function with the
+     * `path` parameter set to `"green_things/fruits/apples/"` then the following layers will be created:
+     *
+     * - `"green_things"` which is a child of the current layer which is also called `"green_things"`
+     * - `"fruits"` which is a child of the `"green_things"` layer created above
+     * - `"apples"` which is a child of the `"fruits"` layer
+     *
+     * this means that in the end we have a hierarchy looking like this `"green_things"` -> `"green_things"` ->
+     * `"fruits"` -> `"apples"`, where `->` denotes that the previous `layer` is the `parent` of the next layer.
+     *
+     * @param [path] The `string` to create layers according to.
+     *
+     * Note that this `string` ***need*** to end with the `'/'` character, or an [IllegalArgumentException] will be
+     * thrown.
+     *
+     * @return the last layer in the specified [path]
+     *
+     * @throws [IllegalArgumentException] If the specified [path] does ***not*** end with the `'/'` character, or if
+     * the specified `path` is not a valid path.
+     */
+    // this one returns the created layer rather than 'this' layer so that the user can configure the newly created
+    // layer.
+    fun addLayer(path: String): Layer
+    
+    /**
+     * Creates new layers from the specified [paths] and then adds all of them to `this` layer.
+     *
+     * This function will create new layers from *all* the non-existent layers in the specified [paths].
+     *
+     * Note that the `strings` defined in the specified [paths] should ***not*** start with the [name] of the layer
+     * that it is being added to, as the system assumes that all layers given in the `path` parameter are *new*
+     * entries, i.e;
+     *
+     * Suppose you're invoking this function on a layer called `"green_things"` and you invoke this function with the
+     * `path` parameter set to `"green_things/fruits/apples/"` then the following layers will be created:
+     *
+     * - `"green_things"` which is a child of the current layer which is also called `"green_things"`
+     * - `"fruits"` which is a child of the `"green_things"` layer created above
+     * - `"apples"` which is a child of the `"fruits"` layer
+     *
+     * this means that in the end we have a hierarchy looking like this `"green_things"` -> `"green_things"` ->
+     * `"fruits"` -> `"apples"`, where `->` denotes that the previous `layer` is the `parent` of the next layer.
+     *
+     * @param [paths] The `strings` to create layers according to.
+     *
+     * Note that every single `string` contained in this array ***need*** to end with the `'/'` character, or an
+     * [IllegalArgumentException] will be thrown.
+     *
+     * @return `this` layer
+     *
+     * @throws [IllegalArgumentException] If one of the `strings` in the specified [paths] does ***not*** end with the
+     * `'/'` character, or if one of the `strings` is not a valid path.
+     */
+    @JvmDefault
+    fun addLayers(vararg paths: String): Layer {
+        for (path in paths) addLayer(path)
+        return this
+    }
     
     /**
      * Removes the specified [layer] from `this` layer, or throws a [NoSuchElementException] if `layer` is not a
@@ -539,7 +635,7 @@ interface Layer : Iterable<Entry<*>> {
      * @throws [NoSuchElementException] If [layer] is not a sub-layer of `this` layer.
      */
     @JvmDefault
-    fun removeLayer(layer: KonfigLayer): Layer {
+    fun removeLayer(layer: Layer): Layer {
         removeLayer(layer.name)
         return this
     }
@@ -592,17 +688,14 @@ interface Layer : Iterable<Entry<*>> {
 @Suppress("LeakingThis")
 open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     
-    /**
-     * The path of `this` layer.
-     */
-    private var _path: String = "$name/"
-    
-    final override val path: String get() = _path
+    @set:JvmSynthetic
+    final override var path: String = "$name/"
+        internal set
     
     /**
      * The underlying map of `this` layer storage.
      */
-    private val _layers: MutableMap<String, KonfigLayer> = LinkedHashMap()
+    private val _layers: MutableMap<String, Layer> = LinkedHashMap()
     
     final override val layers: Map<String, Layer> get() = _layers.toMap()
     
@@ -613,11 +706,9 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     
     final override val entries: Map<String, Entry<*>> get() = _entries.toMap()
     
-    /**
-     * The parent [layer][KonfigLayer] of `this` layer, this will return `null` if `this` layer has no parent.
-     */
-    lateinit var parent: KonfigLayer
-        private set
+    @set:JvmSynthetic
+    final override lateinit var parent: Layer
+        internal set
     
     /**
      * Returns whether or not `this` layer has a parent layer.
@@ -625,7 +716,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
      * If this returns `true`, that means that this layer is *nested*, while if it returns `false` it means that this
      * layer is top-level.
      */
-    val hasParent: Boolean get() = this::parent.isInitialized
+    final override val hasParent: Boolean get() = this::parent.isInitialized
     
     // init
     init {
@@ -635,7 +726,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
             
             for (layer in children) {
                 layer.parent = this
-                layer._path = "${layer.parent._path}${layer._path}"
+                layer.path = "${layer.parent.path}${layer.path}"
                 addLayer(layer)
             }
         }
@@ -646,17 +737,17 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     final override fun <V : Any> addEntry(entry: Entry<V>): Layer = addEntry(entry, entry.name)
     
     final override fun <V : Any> addEntry(entry: Entry<V>, name: String): Layer {
-        _entries[name.sanitizePath(isLayerPath = false)] = entry
+        _entries[name.sanitizePath()] = entry
         
         return this
     }
     
     final override fun removeEntry(path: String): Layer {
-        val _path = path.sanitizePath(isLayerPath = false)
+        val _path = path.sanitizePath()
         
         if ('/' in _path) {
             val name = path.substringAfterLast('/')
-            val layer = getLayer(path.substringBeforeLast('/').sanitizePath(isLayerPath = true)) as KonfigLayer
+            val layer = getLayer(path.substringBeforeLast('/').sanitizePath()) as KonfigLayer
             layer._entries -= name
         } else {
             _entries -= _path
@@ -665,20 +756,21 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         return this
     }
     
-    final override fun String.sanitizePath(isLayerPath: Boolean): String {
+    final override fun String.sanitizePath(): String {
         var _str = replace("/+".toRegex(), "/")
         
-        if (_str.startsWith("./")) _str = "$_path${_str.substringAfter("./")}"
+        if (_str.startsWith("./")) _str = "$path${_str.substringAfter("./")}"
         if (_str.startsWith('/')) _str = _str.substringAfter('/')
-        if (!_str.endsWith('/') && isLayerPath) _str = "$_str/"
         
         return _str
     }
     
     // layers
     
-    final override fun addLayer(layer: KonfigLayer): Layer {
-        layer.parent = this
+    final override fun addLayer(layer: Layer): Layer {
+        // if layer somehow isn't a *KonfigLayer*, then it's up to whoever decided to make a different
+        // implementation to fix the resulting error, have fun.
+        (layer as KonfigLayer).parent = this
         
         _layers[layer.name] = layer
         
@@ -687,22 +779,67 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         return this
     }
     
-    final override fun removeLayer(layer: KonfigLayer): Layer = removeLayer(layer._path)
-    
     final override fun removeLayer(path: String): Layer {
-        _layers -= path.sanitizePath(isLayerPath = true)
+        _layers -= path.sanitizePath()
         
         return this
     }
     
+    final override fun addLayer(path: String): Layer {
+        val _path = path.sanitizePath()
+        if (!_path.endsWith('/')) throw IllegalArgumentException("Provided path <$path> does not end with a '/'")
+        
+        when {
+            _path.isBlank() -> throw IllegalArgumentException("Provided path <$path> became blank after sanitation")
+            '/' in _path -> {
+                val firstLayer = _path.substringBefore('/')
+                val remainingLayers = _path.substringAfter('/')
+                
+                when {
+                    firstLayer in _layers -> {
+                        // we know that this is safe because of the check above.
+                        return _layers.getValue(firstLayer).addLayer(remainingLayers)
+                    }
+                    '/' in remainingLayers -> {
+                        val subLayer = KonfigLayer(firstLayer)
+                        addLayer(subLayer) // this function takes a 'Layer' instance
+                        subLayer.addLayer(remainingLayers) // and this is 'this' function, called recursively
+                        return subLayer
+                    }
+                    remainingLayers.isBlank() -> {
+                        val subLayer = KonfigLayer(firstLayer)
+                        addLayer(subLayer)
+                        return subLayer
+                    }
+                    else -> throw Exception(
+                        "Error in layer handling logic, firstLayer <$firstLayer>, remainingLayers <$remainingLayers>"
+                    )
+                }
+            }
+            else -> {
+                val subLayer = KonfigLayer(_path)
+                addLayer(subLayer)
+                return subLayer
+            }
+        }
+    }
+    
     override fun updatePaths() {
         for ((_, subLayer) in _layers) {
-            subLayer._path = "$path${subLayer.name}/"
+            // if layer somehow isn't a *KonfigLayer*, then it's up to whoever decided to make a different
+            // implementation to fix the resulting error, have fun.
+            (subLayer as KonfigLayer).path = "$path${subLayer.name}/"
             subLayer.updatePaths()
         }
     }
     
     // iterable
+    /**
+     * An iterator for all the `entries` stored in `this` layer.
+     *
+     * Note that this returns an iterator that *only* contains the entries of `this` layer, and not the entries of
+     * any of its sub-layers.
+     */
     final override fun iterator(): Iterator<Entry<*>> = entries.values.iterator()
     
     // delegate functions
@@ -785,13 +922,13 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         description = description
     ) {}
     
-    final override fun toString(): String = "ConfigLayer(name='$name', path='$_path')"
+    final override fun toString(): String = "ConfigLayer(name='$name', path='$path')"
     
     override fun equals(other: Any?): Boolean = when {
         this === other -> true
         other !is KonfigLayer -> false
         name != other.name -> false
-        _path != other._path -> false
+        path != other.path -> false
         _layers != other._layers -> false
         _entries != other._entries -> false
         (hasParent && !other.hasParent) || (!hasParent && other.hasParent) -> false
@@ -799,6 +936,6 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         else -> true
     }
     
-    override fun hashCode(): Int = Objects.hash(name, _path, _layers, _entries, parent)
+    override fun hashCode(): Int = Objects.hash(name, path, _layers, _entries, parent)
     
 }
