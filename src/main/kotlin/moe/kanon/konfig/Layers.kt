@@ -922,7 +922,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         description = description
     ) {}
     
-    final override fun toString(): String = "ConfigLayer(name='$name', path='$path')"
+    final override fun toString(): String = "KonfigLayer(name='$name', path='$path')"
     
     override fun equals(other: Any?): Boolean = when {
         this === other -> true
