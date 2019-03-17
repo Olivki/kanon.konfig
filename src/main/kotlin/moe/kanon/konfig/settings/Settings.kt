@@ -28,6 +28,7 @@ import moe.kanon.konfig.providers.XmlProvider
 @DslMarker
 annotation class KonfigSettingsMarker
 
+@KonfigSettingsMarker
 @Suppress("DataClassPrivateConstructor")
 data class KonfigSettings private constructor(
     /**
@@ -69,6 +70,7 @@ data class KonfigSettings private constructor(
      */
     val xmlRootNamePlacement: XmlRootNamePlacement = XmlRootNamePlacement.IN_TAG
 ) {
+    
     /**
      * What sort of action the system should take when encountering a unknown [entry][Entry] in the
      * [config file][Konfig.file].
@@ -79,7 +81,8 @@ data class KonfigSettings private constructor(
      * ([IGNORE][UnknownEntryBehaviour.IGNORE] by default)
      */
     @KonfigSettingsMarker
-    fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings = this.copy(onUnknownEntry = behaviour)
+    fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings =
+        this.copy(onUnknownEntry = behaviour)
     
     /**
      * The style that the system should use for printing output of generics.
@@ -89,7 +92,8 @@ data class KonfigSettings private constructor(
      * ([KOTLIN][GenericPrintingStyle.KOTLIN] by default)
      */
     @KonfigSettingsMarker
-    fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings = this.copy(genericPrintingStyle = style)
+    fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings =
+        this.copy(genericPrintingStyle = style)
     
     /**
      * Whether or not the system should print the `default` property of the value container for entries when
@@ -101,7 +105,8 @@ data class KonfigSettings private constructor(
      * (`true` by default)
      */
     @KonfigSettingsMarker
-    fun printDefaultValue(predicate: Boolean): KonfigSettings = this.copy(printDefaultValue = predicate)
+    fun printDefaultValue(predicate: Boolean): KonfigSettings =
+        this.copy(printDefaultValue = predicate)
     
     /**
      * Determines how the [Konfig.name] property should be printed in the configuration file if the [Konfig.provider]
@@ -118,19 +123,11 @@ data class KonfigSettings private constructor(
          * The default settings used by the system.
          */
         @JvmStatic
-        val default: KonfigSettings = KonfigSettings()
+        @KonfigSettingsMarker
+        val default: KonfigSettings
+            get() = KonfigSettings()
     }
 }
-
-/**
- * Creates a [KonfigSettings] instance from the values set in the specified [closure].
- *
- * The [closure] is invoked on the [KonfigSettings.default] instance, so if no values are specified, the returned
- * `KonfigSettings` instance will be that of the `default` one.
- */
-@KonfigSettingsMarker
-inline fun createKonfigSettings(closure: KonfigSettings.() -> Unit = {}): KonfigSettings =
-    KonfigSettings.default.apply(closure)
 
 /**
  * Represents an action the system will take when encountering an unknown `entry` when traversing the
