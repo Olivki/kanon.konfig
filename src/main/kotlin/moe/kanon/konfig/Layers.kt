@@ -846,21 +846,33 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     /**
      * A delegates function for creating a [NullableEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> nullable(name: String? = null, description: String, default: V?) =
+    protected inline fun <reified V : Any> nullable(
+        name: String? = null,
+        description: String,
+        default: V?,
+        value: V? = default
+    ) =
         object : DelegatedNullableProperty<V>(
-            value = default,
             name = name,
-            description = description
+            description = description,
+            default = default,
+            value = value
         ) {}
     
     /**
      * A delegates function for creating a [NormalEntry] and automagically adding it to `this` layer.
      */
-    protected inline fun <reified V : Any> normal(name: String? = null, description: String, default: V) =
+    protected inline fun <reified V : Any> normal(
+        name: String? = null,
+        description: String,
+        default: V,
+        value: V = default
+    ) =
         object : DelegatedNormalProperty<V>(
-            value = default,
             name = name,
-            description = description
+            description = description,
+            default = default,
+            value = value
         ) {}
     
     /**
@@ -869,24 +881,33 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
     protected inline fun <reified V : Comparable<V>> limited(
         name: String? = null,
         description: String,
+        range: ClosedRange<V>,
         default: V,
-        range: ClosedRange<V>
+        value: V = default
     ) = object : DelegatedLimitedProperty<V>(
-        value = default,
-        range = range,
         name = name,
-        description = description
+        description = description,
+        range = range,
+        default = default,
+        value = value
     ) {}
     
     /**
      * A delegates function for creating a [LimitedStringEntry] and automagically adding it to `this` layer.
      */
-    protected fun limited(name: String? = null, description: String, default: String, range: IntRange) =
+    protected fun limited(
+        name: String? = null,
+        description: String,
+        range: IntRange,
+        default: String,
+        value: String = default
+    ) =
         object : DelegatedLimitedStringProperty(
-            value = default,
-            range = range,
             name = name,
-            description = description
+            description = description,
+            range = range,
+            default = default,
+            value = value
         ) {}
     
     /**
@@ -894,9 +915,9 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
      */
     protected inline fun <reified V : Any> constant(name: String? = null, description: String, value: V) =
         object : DelegatedConstantProperty<V>(
-            value = value,
             name = name,
-            description = description
+            description = description,
+            value = value
         ) {}
     
     /**
@@ -904,9 +925,9 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
      */
     protected inline fun <reified V : Any> lazy(name: String? = null, description: String, noinline closure: () -> V) =
         object : DelegatedLazyProperty<V>(
-            value = closure,
             name = name,
-            description = description
+            description = description,
+            value = closure
         ) {}
     
     /**
@@ -917,9 +938,9 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         description: String,
         noinline closure: () -> V
     ) = object : DelegatedDynamicProperty<V>(
+        description = description,
         value = closure,
-        name = name,
-        description = description
+        name = name
     ) {}
     
     final override fun toString(): String = "KonfigLayer(name='$name', path='$path')"
