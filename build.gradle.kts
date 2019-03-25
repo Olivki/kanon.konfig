@@ -15,7 +15,7 @@ plugins {
 // Project Specific Variables
 project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
-project.version = "1.1.2"
+project.version = "1.2.0"
 val artifactName = "kanon.konfig"
 val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
 
