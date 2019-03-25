@@ -248,7 +248,7 @@ class XmlProvider : AbstractProvider() {
     
     private val outputter = XMLOutputter(Format.getPrettyFormat())
     
-    private val xStream = XStream(JDom2Driver())
+    val xStream = XStream(JDom2Driver())
     
     init {
         //xStream.allowTypesByRegExp(arrayOf(".*")) // to make xStream be quiet
