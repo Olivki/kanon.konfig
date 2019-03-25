@@ -188,7 +188,7 @@ class JsonProvider : AbstractProvider() {
                 key to entry.createEntry(key)
             }
             
-            "layers" to config.createLayers()
+            if (config.layers.isNotEmpty()) "layers" to config.createLayers()
         }
         
         val output = gson.toJson(obj)
