@@ -31,6 +31,7 @@ import moe.kanon.kommons.io.newBufferedReader
 import moe.kanon.kommons.io.newOutputStream
 import moe.kanon.kommons.io.notExists
 import moe.kanon.kommons.io.writeLine
+import moe.kanon.konfig.FaultyParsedValueException
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.KonfigDeserializationException
 import moe.kanon.konfig.KonfigSerializationException
@@ -40,6 +41,7 @@ import moe.kanon.konfig.entries.Entry
 import moe.kanon.konfig.entries.LimitedStringValue
 import moe.kanon.konfig.entries.LimitedValue
 import moe.kanon.konfig.kotlinTypeName
+import moe.kanon.konfig.settings.FaultyParsedValueAction
 import moe.kanon.konfig.settings.GenericPrintingStyle.DISABLED
 import moe.kanon.konfig.settings.GenericPrintingStyle.JAVA
 import moe.kanon.konfig.settings.GenericPrintingStyle.KOTLIN
@@ -74,13 +76,13 @@ interface Provider {
     /**
      * Loads and sets entries from the specified [file].
      */
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     fun loadFrom(file: Path)
     
     /**
      * Saves all the entries from the [config] to the specified [file].
      */
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     fun saveTo(file: Path)
     
     /**
@@ -115,7 +117,7 @@ class JsonProvider : AbstractProvider() {
         enableComplexMapKeySerialization()
     }.create()
     
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     override fun loadFrom(file: Path) {
         if (file.notExists) {
             saveTo(file)
@@ -126,16 +128,18 @@ class JsonProvider : AbstractProvider() {
         
         val obj = parser.parse(file.newBufferedReader())
         
-        if (obj["name"].asString != config.name) throw KonfigDeserializationException.create(
+        if (obj["name"].asString != config.name) throw KonfigSerializationException.create(
             config,
+            file,
             "Name <${obj["name"].asString}> is not equal to the configs name <${config.name}>."
         )
         
         loop@ for (key in obj.asJsonObject.keySet()) {
-            if (key == "layers") obj[key].traverseLayers(config)
+            if (key == "layers") obj[key].traverseLayers(file, config)
             if (key !in config.entries) {
+                if (key == "name" && obj[key].isJsonPrimitive) continue@loop // it's just the name entry.
                 when (config.settings.onUnknownEntry) {
-                    FAIL -> throw UnknownEntryException.create(key, config.path, config)
+                    FAIL -> throw UnknownEntryException.create(config, file, key, config.path)
                     IGNORE -> continue@loop
                 }
             }
@@ -144,25 +148,54 @@ class JsonProvider : AbstractProvider() {
             val container = obj[key]["container"].asJsonObject
             val result: Any? = gson.fromJson(container["value"], entry.javaType)
             val currentValue = config.getNullable<Any>(key)
+            val entryPath = "${config.path}${entry.name}"
             
-            if (currentValue != result) config[key] = result
+            if (!entry.value.isMutable) continue@loop
+            
+            try {
+                if (currentValue != result) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$result>"
+                    }
+                    config[key] = result
+                }
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        result,
+                        entry,
+                        key,
+                        config,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entry> back to default values as the parsed value <$result> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
+                }
+            }
         }
     }
     
-    private fun JsonElement.traverseLayers(parentLayer: Layer) {
+    private fun JsonElement.traverseLayers(file: Path, parentLayer: Layer) {
         for (key in this.asJsonObject.keySet()) {
             if (key !in parentLayer.layers) continue
             val layer = parentLayer.getLayer(key)
-            this[key].deserializeIntoEntries(layer)
+            this[key].deserializeIntoEntries(file, layer)
         }
     }
     
-    private fun JsonElement.deserializeIntoEntries(currentLayer: Layer) {
+    private fun JsonElement.deserializeIntoEntries(file: Path, currentLayer: Layer) {
         loop@ for (key in this.asJsonObject.keySet()) {
-            if (key == "layers") this[key].traverseLayers(currentLayer)
+            if (key == "layers") this[key].traverseLayers(file, currentLayer)
+            if (key == "name" && this[key].isJsonPrimitive) continue@loop // it's just the name entry.
             if (key !in currentLayer.entries) {
                 when (config.settings.onUnknownEntry) {
-                    FAIL -> throw UnknownEntryException.create(key, currentLayer.path, config)
+                    FAIL -> throw UnknownEntryException.create(config, file, key, currentLayer.path)
                     IGNORE -> continue@loop
                 }
             }
@@ -171,12 +204,40 @@ class JsonProvider : AbstractProvider() {
             val container = this[key]["container"].asJsonObject
             val result: Any? = gson.fromJson(container["value"], entry.value.javaType)
             val currentValue = currentLayer.getNullable<Any>(key)
+            val entryPath = "${currentLayer.path}${entry.name}"
             
-            if (currentValue != result && entry.value.isMutable) currentLayer[key] = result
+            if (!entry.value.isMutable) continue@loop
+            
+            try {
+                if (currentValue != result) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$result>"
+                    }
+                    currentLayer[key] = result
+                }
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        result,
+                        entry,
+                        key,
+                        currentLayer,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entry> back to default values as the parsed value <$result> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
+                }
+            }
         }
     }
     
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     override fun saveTo(file: Path) {
         val obj = Json.obj {
             "name" to config.name
@@ -185,7 +246,7 @@ class JsonProvider : AbstractProvider() {
                 key to entry.createEntry(key)
             }
             
-            "layers" to config.createLayers()
+            if (config.layers.isNotEmpty()) "layers" to config.createLayers()
         }
         
         val output = gson.toJson(obj)
@@ -248,7 +309,7 @@ class XmlProvider : AbstractProvider() {
     
     private val outputter = XMLOutputter(Format.getPrettyFormat())
     
-    private val xStream = XStream(JDom2Driver())
+    val xStream = XStream(JDom2Driver())
     
     init {
         //xStream.allowTypesByRegExp(arrayOf(".*")) // to make xStream be quiet
@@ -259,7 +320,7 @@ class XmlProvider : AbstractProvider() {
         xStream.autodetectAnnotations(true)
     }
     
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     override fun loadFrom(file: Path) {
         if (file.notExists) {
             saveTo(file)
@@ -273,7 +334,8 @@ class XmlProvider : AbstractProvider() {
     }
     
     private fun ParserElement.traverseLayers(file: Path, parentLayer: Layer) {
-        val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+        val name = source.getAttributeValue("name") ?: throw KonfigDeserializationException.create(
+            konfig = config,
             file = file,
             info = "missing 'name' attribute on 'layer' element"
         )
@@ -285,13 +347,14 @@ class XmlProvider : AbstractProvider() {
     }
     
     private fun ParserElement.findEntries(file: Path, currentLayer: Layer) {
-        val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+        val name = source.getAttributeValue("name") ?: throw KonfigDeserializationException.create(
+            konfig = config,
             file = file,
             info = "missing 'name' attribute on 'entry' element"
         )
         
         val entry: Entry<Any> = currentLayer.getEntryOrNull(name) ?: when (config.settings.onUnknownEntry) {
-            FAIL -> throw UnknownEntryException.create(name, currentLayer.path, config)
+            FAIL -> throw UnknownEntryException.create(config, file, name, currentLayer.path)
             IGNORE -> return
         }
         
@@ -301,12 +364,38 @@ class XmlProvider : AbstractProvider() {
             val valueString = outputter.outputString(source.getChild("value"))
             val parsedValue: Any = xStream.fromXML(valueString)
             val currentValue: Any? = currentLayer.getNullable(name)
+            val entryPath = "${currentLayer.path}${entry.name}"
             
-            if (currentValue != parsedValue) currentLayer[name] = parsedValue
+            try {
+                if (currentValue != parsedValue) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$parsedValue>"
+                    }
+                    currentLayer[name] = parsedValue
+                }
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        parsedValue,
+                        entry,
+                        name,
+                        currentLayer,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entryPath> back to default values as the parsed value <$parsedValue> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
+                }
+            }
         }
     }
     
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     override fun saveTo(file: Path) {
         val isRootAttribute = config.settings.xmlRootNamePlacement == XmlRootNamePlacement.IN_ATTRIBUTE
         val document = xml(if (isRootAttribute) "root" else config.name) {

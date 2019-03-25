@@ -25,6 +25,8 @@ import moe.kanon.konfig.providers.AbstractProvider
 import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
 import moe.kanon.konfig.settings.KonfigSettings
+import mu.KLogger
+import mu.KotlinLogging
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.nio.file.Files
@@ -32,6 +34,10 @@ import java.nio.file.Path
 import kotlin.reflect.KClass
 
 interface Konfig : Layer {
+    /**
+     * The underlying logger for `this` config.
+     */
+    val logger: KLogger
     
     /**
      * The provider for `this` config.
@@ -262,6 +268,8 @@ data class KonfigImpl @JvmOverloads constructor(
     override val provider: Provider = JsonProvider(),
     private val delegateContainer: LayerContainer? = null
 ) : AbstractKonfig(), Layer by root {
+    
+    override val logger: KLogger = KotlinLogging.logger { }
     
     override val container: LayerContainer = delegateContainer ?: LayerContainer(name, delegate = this)
     

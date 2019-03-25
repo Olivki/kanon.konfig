@@ -15,7 +15,7 @@ plugins {
 // Project Specific Variables
 project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
-project.version = "1.1.1"
+project.version = "1.2.0"
 val artifactName = "kanon.konfig"
 val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
 
@@ -37,6 +37,9 @@ dependencies {
     implementation(group = "com.google.guava", name = "guava", version = "27.1-jre")
     implementation(group = "com.thoughtworks.xstream", name = "xstream", version = "1.4.11.1")
     
+    // Kotlin Logging Wrapper
+    implementation(group = "io.github.microutils", name = "kotlin-logging", version = "1.6.24")
+    
     // Kanon
     implementation(group = "moe.kanon.kommons", name = "kanon.kommons", version = "0.6.0-alpha")
     implementation(group = "moe.kanon.xml", name = "kanon.xml", version = "2.0.0")
@@ -44,21 +47,6 @@ dependencies {
     // Test Dependencies
     testImplementation(group = "io.kotlintest", name = "kotlintest-runner-junit5", version = "3.1.11")
     testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "1.8.0-beta2")
-}
-
-subprojects {
-    buildscript {
-        repositories {
-            mavenCentral()
-        }
-        
-        dependencies {
-            classpath(kotlin("gradle-plugin", version = "1.3.21"))
-        }
-    }
-    
-    apply(plugin = "java")
-    apply(plugin = "kotlin")
 }
 
 tasks.withType<KotlinCompile> {
