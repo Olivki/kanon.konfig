@@ -128,14 +128,15 @@ class JsonProvider : AbstractProvider() {
         
         if (obj["name"].asString != config.name) throw KonfigDeserializationException.create(
             config,
+            file,
             "Name <${obj["name"].asString}> is not equal to the configs name <${config.name}>."
         )
         
         loop@ for (key in obj.asJsonObject.keySet()) {
-            if (key == "layers") obj[key].traverseLayers(config)
+            if (key == "layers") obj[key].traverseLayers(file, config)
             if (key !in config.entries) {
                 when (config.settings.onUnknownEntry) {
-                    FAIL -> throw UnknownEntryException.create(key, config.path, config)
+                    FAIL -> throw UnknownEntryException.create(config, file, key, config.path)
                     IGNORE -> continue@loop
                 }
             }
@@ -149,20 +150,20 @@ class JsonProvider : AbstractProvider() {
         }
     }
     
-    private fun JsonElement.traverseLayers(parentLayer: Layer) {
+    private fun JsonElement.traverseLayers(file: Path, parentLayer: Layer) {
         for (key in this.asJsonObject.keySet()) {
             if (key !in parentLayer.layers) continue
             val layer = parentLayer.getLayer(key)
-            this[key].deserializeIntoEntries(layer)
+            this[key].deserializeIntoEntries(file, layer)
         }
     }
     
-    private fun JsonElement.deserializeIntoEntries(currentLayer: Layer) {
+    private fun JsonElement.deserializeIntoEntries(file: Path, currentLayer: Layer) {
         loop@ for (key in this.asJsonObject.keySet()) {
-            if (key == "layers") this[key].traverseLayers(currentLayer)
+            if (key == "layers") this[key].traverseLayers(file, currentLayer)
             if (key !in currentLayer.entries) {
                 when (config.settings.onUnknownEntry) {
-                    FAIL -> throw UnknownEntryException.create(key, currentLayer.path, config)
+                    FAIL -> throw UnknownEntryException.create(config, file, key, currentLayer.path)
                     IGNORE -> continue@loop
                 }
             }
@@ -274,6 +275,7 @@ class XmlProvider : AbstractProvider() {
     
     private fun ParserElement.traverseLayers(file: Path, parentLayer: Layer) {
         val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+            konfig = config,
             file = file,
             info = "missing 'name' attribute on 'layer' element"
         )
@@ -286,12 +288,13 @@ class XmlProvider : AbstractProvider() {
     
     private fun ParserElement.findEntries(file: Path, currentLayer: Layer) {
         val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+            konfig = config,
             file = file,
             info = "missing 'name' attribute on 'entry' element"
         )
         
         val entry: Entry<Any> = currentLayer.getEntryOrNull(name) ?: when (config.settings.onUnknownEntry) {
-            FAIL -> throw UnknownEntryException.create(name, currentLayer.path, config)
+            FAIL -> throw UnknownEntryException.create(config, file, name, currentLayer.path)
             IGNORE -> return
         }
         
