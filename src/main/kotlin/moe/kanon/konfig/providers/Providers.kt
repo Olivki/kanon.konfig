@@ -31,6 +31,7 @@ import moe.kanon.kommons.io.newBufferedReader
 import moe.kanon.kommons.io.newOutputStream
 import moe.kanon.kommons.io.notExists
 import moe.kanon.kommons.io.writeLine
+import moe.kanon.konfig.FaultyParsedValueException
 import moe.kanon.konfig.Konfig
 import moe.kanon.konfig.KonfigDeserializationException
 import moe.kanon.konfig.KonfigSerializationException
@@ -40,6 +41,7 @@ import moe.kanon.konfig.entries.Entry
 import moe.kanon.konfig.entries.LimitedStringValue
 import moe.kanon.konfig.entries.LimitedValue
 import moe.kanon.konfig.kotlinTypeName
+import moe.kanon.konfig.settings.FaultyParsedValueAction
 import moe.kanon.konfig.settings.GenericPrintingStyle.DISABLED
 import moe.kanon.konfig.settings.GenericPrintingStyle.JAVA
 import moe.kanon.konfig.settings.GenericPrintingStyle.KOTLIN
@@ -147,7 +149,24 @@ class JsonProvider : AbstractProvider() {
             val result: Any? = gson.fromJson(container["value"], entry.javaType)
             val currentValue = config.getNullable<Any>(key)
             
-            if (currentValue != result) config[key] = result
+            if (!entry.value.isMutable) continue@loop
+            
+            try {
+                if (currentValue != result) config[key] = result
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        result,
+                        entry,
+                        key,
+                        config,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                }
+            }
         }
     }
     
@@ -175,7 +194,24 @@ class JsonProvider : AbstractProvider() {
             val result: Any? = gson.fromJson(container["value"], entry.value.javaType)
             val currentValue = currentLayer.getNullable<Any>(key)
             
-            if (currentValue != result && entry.value.isMutable) currentLayer[key] = result
+            if (!entry.value.isMutable) continue@loop
+            
+            try {
+                if (currentValue != result) currentLayer[key] = result
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        result,
+                        entry,
+                        key,
+                        currentLayer,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                }
+            }
         }
     }
     
@@ -307,7 +343,22 @@ class XmlProvider : AbstractProvider() {
             val parsedValue: Any = xStream.fromXML(valueString)
             val currentValue: Any? = currentLayer.getNullable(name)
             
-            if (currentValue != parsedValue) currentLayer[name] = parsedValue
+            try {
+                if (currentValue != parsedValue) currentLayer[name] = parsedValue
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
+                        config,
+                        file,
+                        parsedValue,
+                        entry,
+                        name,
+                        currentLayer,
+                        e
+                    )
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                }
+            }
         }
     }
     

@@ -16,6 +16,7 @@
 
 package moe.kanon.konfig
 
+import moe.kanon.konfig.entries.Entry
 import java.io.IOException
 import java.nio.file.Path
 
@@ -72,7 +73,7 @@ open class KonfigDeserializationException : IOException {
          * @param [konfig] the [Konfig] instance that the file is being loaded into
          * @param [file] the file that was being loaded
          * @param [info] any extra info regarding the failure
-         * @param [cause] the original cause of this exception
+         * @param [cause] the original cause of `this` exception
          */
         @JvmStatic
         fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigDeserializationException =
@@ -138,7 +139,7 @@ open class KonfigSerializationException : IOException {
          * @param [konfig] the [Konfig] instance that was being deserialized
          * @param [file] the file that the [konfig] is being serialized to
          * @param [info] any extra info regarding the failure
-         * @param [cause] the original cause of this exception
+         * @param [cause] the original cause of `this` exception
          */
         @JvmStatic
         fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigSerializationException =
@@ -167,11 +168,10 @@ open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, 
          * Creates a [UnknownEntryException] with a [message] populated by the specified [konfig], [file], [entry] and
          * [layer].
          *
-         * @param [konfig] the [Konfig] instance that we're working on
+         * @param [konfig] the konfig for which the file belongs to
          * @param [file] the file that the [konfig] is being loaded from
          * @param [entry] the name and some additional info regarding the unknown entry
          * @param [layer] the layer that the system is currently on
-         * @param [konfig] the konfig for which the file belongs to
          */
         @JvmStatic
         fun create(konfig: Konfig, file: Path, entry: String, layer: String): UnknownEntryException =
@@ -182,5 +182,131 @@ open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, 
                 layer,
                 "Encountered a unknown entry <$entry> in layer <$layer> when loading the konfig <$konfig>"
             )
+    }
+}
+
+/**
+ * Thrown to indicate that the system encountered a problem when trying to parse a value from a configuration file.
+ *
+ * @param [konfig] the [Konfig] instance that `this` exception stems from.
+ * @param [file] the file that `this` exception stems from.
+ */
+open class FaultyParsedValueException : KonfigDeserializationException {
+    /**
+     * The parsed value that was deemed faulty.
+     */
+    val faultyValue: Any?
+    
+    /**
+     * The [Entry] that the value belongs to.
+     */
+    val entry: Entry<*>
+    
+    /**
+     * The key that the [Entry] is stored under in the [layer].
+     */
+    val entryKey: String
+    
+    /**
+     * The [Layer] that the [entry] belongs to.
+     */
+    val layer: Layer
+    
+    constructor(
+        konfig: Konfig,
+        file: Path,
+        faultyValue: Any?,
+        entry: Entry<*>,
+        entryKey: String,
+        layer: Layer,
+        message: String
+    ) : super(konfig, file, message) {
+        this.faultyValue = faultyValue
+        this.entry = entry
+        this.entryKey = entryKey
+        this.layer = layer
+    }
+    
+    constructor(
+        konfig: Konfig,
+        file: Path,
+        faultyValue: Any?,
+        entry: Entry<*>,
+        entryKey: String,
+        layer: Layer,
+        message: String,
+        cause: Throwable
+    ) : super(konfig, file, message, cause) {
+        this.faultyValue = faultyValue
+        this.entry = entry
+        this.entryKey = entryKey
+        this.layer = layer
+    }
+    
+    companion object {
+        /**
+         * Creates and returns a [FaultyParsedValueException] with a [message] populated by the the specified [konfig],
+         * [file], [faultyValue], [entry], [entryKey] and [layer].
+         *
+         * @param [konfig] the konfig for which the file belongs to
+         * @param [file] the file that the [konfig] is being loaded from
+         * @param [faultyValue] the value that was deemed faulty by the system
+         * @param [entry] the [Entry] that the [faultyValue] belongs to
+         * @param [entryKey] the key that the [entry] is stored under in the specified [layer]
+         * @param [layer] the [Layer] that the [entry] belongs to
+         */
+        @JvmStatic
+        fun create(
+            konfig: Konfig,
+            file: Path,
+            faultyValue: Any?,
+            entry: Entry<*>,
+            entryKey: String,
+            layer: Layer
+        ): FaultyParsedValueException = FaultyParsedValueException(
+            konfig,
+            file,
+            faultyValue,
+            entry,
+            entryKey,
+            layer,
+            "The parsed value <$faultyValue> was deemed faulty for the entry <$entry> with the value <${layer.getNullable<Any>(
+                entryKey
+            )}>"
+        )
+    
+        /**
+         * Creates and returns a [FaultyParsedValueException] with a [message] populated by the the specified [konfig],
+         * [file], [faultyValue], [entry], [entryKey], [layer] and [cause].
+         *
+         * @param [konfig] the konfig for which the file belongs to
+         * @param [file] the file that the [konfig] is being loaded from
+         * @param [faultyValue] the value that was deemed faulty by the system
+         * @param [entry] the [Entry] that the [faultyValue] belongs to
+         * @param [entryKey] the key that the [entry] is stored under in the specified [layer]
+         * @param [layer] the [Layer] that the [entry] belongs to
+         * @param [cause] the original cause of `this` exception
+         */
+        @JvmStatic
+        fun create(
+            konfig: Konfig,
+            file: Path,
+            faultyValue: Any?,
+            entry: Entry<*>,
+            entryKey: String,
+            layer: Layer,
+            cause: Throwable
+        ): FaultyParsedValueException = FaultyParsedValueException(
+            konfig,
+            file,
+            faultyValue,
+            entry,
+            entryKey,
+            layer,
+            "The parsed value <$faultyValue> was deemed faulty for the entry <$entry> with the value <${layer.getNullable<Any>(
+                entryKey
+            )}> cause <${cause.message}>",
+            cause
+        )
     }
 }

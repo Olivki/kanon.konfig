@@ -28,6 +28,8 @@ import moe.kanon.konfig.providers.XmlProvider
 @DslMarker
 annotation class KonfigSettingsMarker
 
+// TODO: Add a setting for falling back to default value if the loading of a setting fails.
+
 @KonfigSettingsMarker
 @Suppress("DataClassPrivateConstructor")
 data class KonfigSettings private constructor(
@@ -67,10 +69,18 @@ data class KonfigSettings private constructor(
      * is set to [XmlProvider].
      *
      * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     *
+     * ([IN_TAG][XmlRootNamePlacement.IN_TAG] by default)
      */
-    val xmlRootNamePlacement: XmlRootNamePlacement = XmlRootNamePlacement.IN_TAG
+    val xmlRootNamePlacement: XmlRootNamePlacement = XmlRootNamePlacement.IN_TAG,
+    /**
+     * Determines what action the system should take when it encounters a faulty value when parsing the configuration
+     * file.
+     *
+     * ([FALLBACK_TO_DEFAULT][FaultyParsedValueAction.FALLBACK_TO_DEFAULT] by default)
+     */
+    val faultyParsedValueAction: FaultyParsedValueAction = FaultyParsedValueAction.FALLBACK_TO_DEFAULT
 ) {
-    
     /**
      * What sort of action the system should take when encountering a unknown [entry][Entry] in the
      * [config file][Konfig.file].
@@ -113,10 +123,22 @@ data class KonfigSettings private constructor(
      * is set to [XmlProvider].
      *
      * Note that this setting does not do anything if the [Konfig.provider] is set to [JsonProvider].
+     *
+     * ([IN_TAG][XmlRootNamePlacement.IN_TAG] by default)
      */
     @KonfigSettingsMarker
     fun xmlRootNamePlacement(placement: XmlRootNamePlacement): KonfigSettings =
         this.copy(xmlRootNamePlacement = placement)
+    
+    /**
+     * Determines what action the system should take when it encounters a faulty value when parsing the configuration
+     * file.
+     *
+     * ([FALLBACK_TO_DEFAULT][FaultyParsedValueAction.FALLBACK_TO_DEFAULT] by default)
+     */
+    @KonfigSettingsMarker
+    fun faultyParsedValueAction(action: FaultyParsedValueAction): KonfigSettings =
+        this.copy(faultyParsedValueAction = action)
     
     companion object {
         /**
@@ -186,4 +208,18 @@ enum class XmlRootNamePlacement {
      * A [Konfig] with the name of `"module"` will have a root element that looks like `"<root name="module">...</root>"`
      */
     IN_ATTRIBUTE
+}
+
+/**
+ * Represents a action that the system will take when it encounters a faulty value when parsing the configuration file.
+ */
+enum class FaultyParsedValueAction {
+    /**
+     * The system will fail loudly and throw an exception when it encounters a faulty value.
+     */
+    THROW_EXCEPTION,
+    /**
+     * The system will set the value of the parsed entry back to its default value when it encounters a faulty value.
+     */
+    FALLBACK_TO_DEFAULT
 }
