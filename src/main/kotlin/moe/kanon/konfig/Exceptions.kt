@@ -80,7 +80,7 @@ open class KonfigDeserializationException : IOException {
         @JvmStatic
         fun create(config: Konfig, info: String): KonfigDeserializationException =
             KonfigDeserializationException(
-                "An error occurred when attempting to deserialize konfig <$config> into the file <${config.file}>. ($info)"
+                "An error occurred when attempting to deserialize konfig <$config> into the file <${config.file}>: $info"
             )
         
         /**
@@ -93,7 +93,7 @@ open class KonfigDeserializationException : IOException {
         @JvmStatic
         fun create(config: Konfig, info: String, cause: Throwable): KonfigDeserializationException =
             KonfigDeserializationException(
-                "An error occurred when attempting to deserialize konfig <$config> into the file <${config.file}>. ($info)",
+                "An error occurred when attempting to deserialize konfig <$config> into the file <${config.file}>: $info",
                 cause
             )
     }
