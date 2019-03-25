@@ -148,11 +148,17 @@ class JsonProvider : AbstractProvider() {
             val container = obj[key]["container"].asJsonObject
             val result: Any? = gson.fromJson(container["value"], entry.javaType)
             val currentValue = config.getNullable<Any>(key)
+            val entryPath = "${config.path}${entry.name}"
             
             if (!entry.value.isMutable) continue@loop
             
             try {
-                if (currentValue != result) config[key] = result
+                if (currentValue != result) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$result>"
+                    }
+                    config[key] = result
+                }
             } catch (e: Exception) {
                 when (config.settings.faultyParsedValueAction) {
                     FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
@@ -164,7 +170,12 @@ class JsonProvider : AbstractProvider() {
                         config,
                         e
                     )
-                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entry> back to default values as the parsed value <$result> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
                 }
             }
         }
@@ -193,11 +204,17 @@ class JsonProvider : AbstractProvider() {
             val container = this[key]["container"].asJsonObject
             val result: Any? = gson.fromJson(container["value"], entry.value.javaType)
             val currentValue = currentLayer.getNullable<Any>(key)
+            val entryPath = "${currentLayer.path}${entry.name}"
             
             if (!entry.value.isMutable) continue@loop
             
             try {
-                if (currentValue != result) currentLayer[key] = result
+                if (currentValue != result) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$result>"
+                    }
+                    currentLayer[key] = result
+                }
             } catch (e: Exception) {
                 when (config.settings.faultyParsedValueAction) {
                     FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
@@ -209,7 +226,12 @@ class JsonProvider : AbstractProvider() {
                         currentLayer,
                         e
                     )
-                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entry> back to default values as the parsed value <$result> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
                 }
             }
         }
@@ -342,9 +364,15 @@ class XmlProvider : AbstractProvider() {
             val valueString = outputter.outputString(source.getChild("value"))
             val parsedValue: Any = xStream.fromXML(valueString)
             val currentValue: Any? = currentLayer.getNullable(name)
+            val entryPath = "${currentLayer.path}${entry.name}"
             
             try {
-                if (currentValue != parsedValue) currentLayer[name] = parsedValue
+                if (currentValue != parsedValue) {
+                    config.logger.debug {
+                        "Value of entry <$entryPath> has changed, default <$currentValue>, parsed <$parsedValue>"
+                    }
+                    currentLayer[name] = parsedValue
+                }
             } catch (e: Exception) {
                 when (config.settings.faultyParsedValueAction) {
                     FaultyParsedValueAction.THROW_EXCEPTION -> throw FaultyParsedValueException.create(
@@ -356,7 +384,12 @@ class XmlProvider : AbstractProvider() {
                         currentLayer,
                         e
                     )
-                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> entry.value.reset()
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        config.logger.error {
+                            "Resetting entry <$entryPath> back to default values as the parsed value <$parsedValue> was deemed faulty."
+                        }
+                        entry.value.reset()
+                    }
                 }
             }
         }
