@@ -32,8 +32,8 @@ import moe.kanon.kommons.io.newOutputStream
 import moe.kanon.kommons.io.notExists
 import moe.kanon.kommons.io.writeLine
 import moe.kanon.konfig.Konfig
-import moe.kanon.konfig.KonfigSerializationException
 import moe.kanon.konfig.KonfigDeserializationException
+import moe.kanon.konfig.KonfigSerializationException
 import moe.kanon.konfig.Layer
 import moe.kanon.konfig.UnknownEntryException
 import moe.kanon.konfig.entries.Entry
@@ -135,6 +135,7 @@ class JsonProvider : AbstractProvider() {
         loop@ for (key in obj.asJsonObject.keySet()) {
             if (key == "layers") obj[key].traverseLayers(file, config)
             if (key !in config.entries) {
+                if (key == "name" && obj[key].isJsonPrimitive) continue@loop // it's just the name entry.
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(config, file, key, config.path)
                     IGNORE -> continue@loop
@@ -161,6 +162,7 @@ class JsonProvider : AbstractProvider() {
     private fun JsonElement.deserializeIntoEntries(file: Path, currentLayer: Layer) {
         loop@ for (key in this.asJsonObject.keySet()) {
             if (key == "layers") this[key].traverseLayers(file, currentLayer)
+            if (key == "name" && this[key].isJsonPrimitive) continue@loop // it's just the name entry.
             if (key !in currentLayer.entries) {
                 when (config.settings.onUnknownEntry) {
                     FAIL -> throw UnknownEntryException.create(config, file, key, currentLayer.path)
