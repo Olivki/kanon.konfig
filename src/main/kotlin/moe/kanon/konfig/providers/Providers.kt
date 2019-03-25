@@ -32,8 +32,8 @@ import moe.kanon.kommons.io.newOutputStream
 import moe.kanon.kommons.io.notExists
 import moe.kanon.kommons.io.writeLine
 import moe.kanon.konfig.Konfig
-import moe.kanon.konfig.KonfigDeserializationException
 import moe.kanon.konfig.KonfigSerializationException
+import moe.kanon.konfig.KonfigDeserializationException
 import moe.kanon.konfig.Layer
 import moe.kanon.konfig.UnknownEntryException
 import moe.kanon.konfig.entries.Entry
@@ -74,13 +74,13 @@ interface Provider {
     /**
      * Loads and sets entries from the specified [file].
      */
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     fun loadFrom(file: Path)
     
     /**
      * Saves all the entries from the [config] to the specified [file].
      */
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     fun saveTo(file: Path)
     
     /**
@@ -115,7 +115,7 @@ class JsonProvider : AbstractProvider() {
         enableComplexMapKeySerialization()
     }.create()
     
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     override fun loadFrom(file: Path) {
         if (file.notExists) {
             saveTo(file)
@@ -126,7 +126,7 @@ class JsonProvider : AbstractProvider() {
         
         val obj = parser.parse(file.newBufferedReader())
         
-        if (obj["name"].asString != config.name) throw KonfigDeserializationException.create(
+        if (obj["name"].asString != config.name) throw KonfigSerializationException.create(
             config,
             file,
             "Name <${obj["name"].asString}> is not equal to the configs name <${config.name}>."
@@ -177,7 +177,7 @@ class JsonProvider : AbstractProvider() {
         }
     }
     
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     override fun saveTo(file: Path) {
         val obj = Json.obj {
             "name" to config.name
@@ -260,7 +260,7 @@ class XmlProvider : AbstractProvider() {
         xStream.autodetectAnnotations(true)
     }
     
-    @Throws(IOException::class, KonfigDeserializationException::class)
+    @Throws(IOException::class, KonfigSerializationException::class)
     override fun loadFrom(file: Path) {
         if (file.notExists) {
             saveTo(file)
@@ -274,7 +274,7 @@ class XmlProvider : AbstractProvider() {
     }
     
     private fun ParserElement.traverseLayers(file: Path, parentLayer: Layer) {
-        val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+        val name = source.getAttributeValue("name") ?: throw KonfigDeserializationException.create(
             konfig = config,
             file = file,
             info = "missing 'name' attribute on 'layer' element"
@@ -287,7 +287,7 @@ class XmlProvider : AbstractProvider() {
     }
     
     private fun ParserElement.findEntries(file: Path, currentLayer: Layer) {
-        val name = source.getAttributeValue("name") ?: throw KonfigSerializationException.create(
+        val name = source.getAttributeValue("name") ?: throw KonfigDeserializationException.create(
             konfig = config,
             file = file,
             info = "missing 'name' attribute on 'entry' element"
@@ -309,7 +309,7 @@ class XmlProvider : AbstractProvider() {
         }
     }
     
-    @Throws(KonfigSerializationException::class)
+    @Throws(KonfigDeserializationException::class)
     override fun saveTo(file: Path) {
         val isRootAttribute = config.settings.xmlRootNamePlacement == XmlRootNamePlacement.IN_ATTRIBUTE
         val document = xml(if (isRootAttribute) "root" else config.name) {

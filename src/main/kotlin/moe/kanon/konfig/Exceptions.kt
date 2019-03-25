@@ -22,72 +22,6 @@ import java.nio.file.Path
 /**
  * Thrown to indicate that something went wrong when attempting to deserialize a file into a [Konfig] instance.
  */
-open class KonfigSerializationException : IOException {
-    
-    /**
-     * The [Konfig] instance that `this` exception stems from.
-     */
-    val konfig: Konfig
-    /**
-     * The file that `this` exception stems from.
-     */
-    val file: Path
-    
-    constructor(konfig: Konfig, file: Path, message: String) : super(message) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, message: String, cause: Throwable) : super(message, cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, cause: Throwable) : super(cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    companion object {
-        /**
-         * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file] and
-         * [info].
-         *
-         * @param [konfig] the [Konfig] instance that the file is being loaded into
-         * @param [file] the file that was being loaded
-         * @param [info] any extra info regarding the failure
-         */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String): KonfigSerializationException =
-            KonfigSerializationException(
-                konfig,
-                file,
-                "An error occurred when attempting to deserialize the file <$file> into the konfig <${konfig.name}>: $info"
-            )
-        
-        /**
-         * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file],
-         * [info] and [cause].
-         *
-         * @param [konfig] the [Konfig] instance that the file is being loaded into
-         * @param [file] the file that was being loaded
-         * @param [info] any extra info regarding the failure
-         * @param [cause] the original cause of this exception
-         */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigSerializationException =
-            KonfigSerializationException(
-                konfig,
-                file,
-                "An error occurred when attempting to deserialize the file <$file> into the konfig <${konfig.name}>: $info",
-                cause
-            )
-    }
-}
-
-/**
- * Thrown to indicate that something went wrong when attempting to serialize a [Konfig] instance to a file.
- */
 open class KonfigDeserializationException : IOException {
     
     /**
@@ -119,8 +53,8 @@ open class KonfigDeserializationException : IOException {
          * Creates a [KonfigDeserializationException] with a [message] populated by the specified [konfig], [file] and
          * [info].
          *
-         * @param [konfig] the [Konfig] instance that was being deserialized
-         * @param [file] the file that the [konfig] is being serialized to
+         * @param [konfig] the [Konfig] instance that the file is being loaded into
+         * @param [file] the file that was being loaded
          * @param [info] any extra info regarding the failure
          */
         @JvmStatic
@@ -128,11 +62,77 @@ open class KonfigDeserializationException : IOException {
             KonfigDeserializationException(
                 konfig,
                 file,
-                "An error occurred when attempting to serialize the konfig <$konfig> to the file <$file>: $info"
+                "An error occurred when attempting to deserialize the file <$file> into the konfig <${konfig.name}>: $info"
             )
         
         /**
          * Creates a [KonfigDeserializationException] with a [message] populated by the specified [konfig], [file],
+         * [info] and [cause].
+         *
+         * @param [konfig] the [Konfig] instance that the file is being loaded into
+         * @param [file] the file that was being loaded
+         * @param [info] any extra info regarding the failure
+         * @param [cause] the original cause of this exception
+         */
+        @JvmStatic
+        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigDeserializationException =
+            KonfigDeserializationException(
+                konfig,
+                file,
+                "An error occurred when attempting to deserialize the file <$file> into the konfig <${konfig.name}>: $info",
+                cause
+            )
+    }
+}
+
+/**
+ * Thrown to indicate that something went wrong when attempting to serialize a [Konfig] instance to a file.
+ */
+open class KonfigSerializationException : IOException {
+    
+    /**
+     * The [Konfig] instance that `this` exception stems from.
+     */
+    val konfig: Konfig
+    /**
+     * The file that `this` exception stems from.
+     */
+    val file: Path
+    
+    constructor(konfig: Konfig, file: Path, message: String) : super(message) {
+        this.konfig = konfig
+        this.file = file
+    }
+    
+    constructor(konfig: Konfig, file: Path, message: String, cause: Throwable) : super(message, cause) {
+        this.konfig = konfig
+        this.file = file
+    }
+    
+    constructor(konfig: Konfig, file: Path, cause: Throwable) : super(cause) {
+        this.konfig = konfig
+        this.file = file
+    }
+    
+    companion object {
+        /**
+         * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file] and
+         * [info].
+         *
+         * @param [konfig] the [Konfig] instance that was being deserialized
+         * @param [file] the file that the [konfig] is being serialized to
+         * @param [info] any extra info regarding the failure
+         */
+        @JvmStatic
+        fun create(konfig: Konfig, file: Path, info: String): KonfigSerializationException =
+            KonfigSerializationException(
+                konfig,
+                file,
+                "An error occurred when attempting to serialize the konfig <$konfig> to the file <$file>: $info"
+            )
+        
+        /**
+         * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file],
          * [info] and [cause].
          *
          * @param [konfig] the [Konfig] instance that was being deserialized
@@ -141,8 +141,8 @@ open class KonfigDeserializationException : IOException {
          * @param [cause] the original cause of this exception
          */
         @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigDeserializationException =
-            KonfigDeserializationException(
+        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigSerializationException =
+            KonfigSerializationException(
                 konfig,
                 file,
                 "An error occurred when attempting to serialize the konfig <$konfig> to the file <$file>: $info",
@@ -161,7 +161,7 @@ open class KonfigDeserializationException : IOException {
  * @property [layer] The layer that the system is currently on that `this` exception stems from.
  */
 open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, val layer: String, message: String) :
-    KonfigSerializationException(konfig, file, message) {
+    KonfigDeserializationException(konfig, file, message) {
     companion object {
         /**
          * Creates a [UnknownEntryException] with a [message] populated by the specified [konfig], [file], [entry] and
