@@ -33,7 +33,7 @@ dependencies {
     
     implementation(group = "com.google.code.gson", name = "gson", version = "2.8.5")
     implementation(group = "com.github.mgrzeszczak", name = "json-dsl", version = "1.1") {
-        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jre8")
+        exclude(group = "org.jetbrains.kotlin")
     }
     implementation(group = "com.github.salomonbrys.kotson", name = "kotson", version = "2.5.0")
     implementation(group = "com.google.guava", name = "guava", version = "27.1-jre")
