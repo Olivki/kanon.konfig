@@ -15,7 +15,7 @@ plugins {
 // Project Specific Variables
 project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
-project.version = "1.2.0"
+project.version = "1.2.1"
 val artifactName = "kanon.konfig"
 val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
 
@@ -32,7 +32,9 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     
     implementation(group = "com.google.code.gson", name = "gson", version = "2.8.5")
-    implementation(group = "com.github.mgrzeszczak", name = "json-dsl", version = "1.1")
+    implementation(group = "com.github.mgrzeszczak", name = "json-dsl", version = "1.1") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jre8")
+    }
     implementation(group = "com.github.salomonbrys.kotson", name = "kotson", version = "2.5.0")
     implementation(group = "com.google.guava", name = "guava", version = "27.1-jre")
     implementation(group = "com.thoughtworks.xstream", name = "xstream", version = "1.4.11.1")
