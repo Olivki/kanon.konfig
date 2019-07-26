@@ -40,37 +40,37 @@ import moe.kanon.konfig.entries.delegates.DelegatedLimitedProperty
 import moe.kanon.konfig.entries.delegates.DelegatedLimitedStringProperty
 import moe.kanon.konfig.entries.delegates.DelegatedNormalProperty
 import moe.kanon.konfig.entries.delegates.DelegatedNullableProperty
+import moe.kanon.konfig.internal.isKotlinClass
 import java.util.*
 import kotlin.NoSuchElementException
 
 @Suppress("UNCHECKED_CAST")
 interface Layer : Iterable<Entry<*>> {
-    
     /**
      * The name of `this` layer.
      */
     val name: String
-    
+
     /**
      * An immutable view of the underlying map of the entry storage.
      */
     val entries: Map<String, Entry<*>>
-    
+
     /**
      * An immutable view of the underlying map of the layer storage.
      */
     val layers: Map<String, Layer>
-    
+
     /**
      * An immutable view of the path to `this` layer.
      */
     val path: String
-    
+
     /**
      * The parent [layer][KonfigLayer] of `this` layer, this will return `null` if `this` layer has no parent.
      */
     val parent: Layer
-    
+
     /**
      * Returns whether or not `this` layer has a parent layer.
      *
@@ -78,49 +78,36 @@ interface Layer : Iterable<Entry<*>> {
      * layer is top-level.
      */
     val hasParent: Boolean
-    
+
     /**
      * Adds the specified [entry] to `this` layer.
      *
      * The `entry` gets stored under it's [name][Entry.name] property.
      *
-     * @param [entry] The [Entry] to add to `this` storage.
+     * @param [entry] the [Entry] to add to `this` storage
      */
-    fun <V : Any> addEntry(entry: Entry<V>): Layer
-    
+    fun <V> addEntry(entry: Entry<V>): Layer
+
     /**
      * Adds the specified [entry] to `this` layer.
      *
      * The `entry` gets stored under it's [name][Entry.name] property.
      *
-     * @param [entry] The [Entry] to add to `this` storage.
-     * @param [name] The name to store the [entry] under.
+     * @param [entry] the [Entry] to add to `this` storage
+     * @param [name] the name to store the [entry] under
      *
      * ([entry.name][Entry.name] by default.)
      */
-    fun <V : Any> addEntry(entry: Entry<V>, name: String): Layer
-    
+    fun <V> addEntry(entry: Entry<V>, name: String): Layer
+
     /**
      * Adds all the entries stored under the specified [entries] to `this` layer.
      */
-    @JvmDefault
-    fun addEntries(entries: Collection<Entry<*>>): Layer {
+    @JvmDefault fun addEntries(entries: Iterable<Entry<*>>): Layer {
         for (entry in entries) addEntry(entry)
         return this
     }
-    
-    /**
-     * Adds the specified [entry] to `this` layer.
-     *
-     * The `entry` gets stored under it's [name][Entry.name] property.
-     *
-     * @param [entry] The [Entry] to add to `this` storage.
-     */
-    @JvmSynthetic
-    operator fun <V : Any> plusAssign(entry: Entry<V>) {
-        addEntry(entry)
-    }
-    
+
     /**
      * Removes the entry stored under the specified [path] from `this` layer, or throws a [NoSuchElementException] if
      * no entry is found.
@@ -138,27 +125,7 @@ interface Layer : Iterable<Entry<*>> {
      * @throws [NoSuchElementException] If no `entry` in `this` storage is stored under the specified [path].
      */
     fun removeEntry(path: String): Layer
-    
-    /**
-     * Removes the entry stored under the specified [path] from `this` layer, or throws a [NoSuchElementException] if
-     * no entry is found.
-     *
-     * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
-     * the last entry of the delimited array is the name of the entry, i.e;
-     *
-     * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
-     * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
-     * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to remove whatever
-     * is stored under the `name` in the [entries] of that layer.
-     *
-     * @param [path] The path to the entry to remove.
-     * @throws [NoSuchElementException] If no `entry` in `this` storage is stored under the specified [path].
-     */
-    @JvmSynthetic
-    operator fun minusAssign(path: String) {
-        removeEntry(path)
-    }
-    
+
     /**
      * Sets the value of the [Entry] stored under the specified [path] to the specified [value].
      *
@@ -183,16 +150,15 @@ interface Layer : Iterable<Entry<*>> {
      * [lazy][Entry.Value.Lazy] or [dynamic][Entry.Value.Dynamic]).
      *
      */
-    @JvmDefault
-    fun <V : Any> setValue(path: String, value: V?): Layer {
+    @JvmDefault fun <V : Any> setValue(path: String, value: V?): Layer {
         val _path = path.sanitizePath()
         val entry = getEntry<V>(_path)
         val _value = entry.value
-        
+
         if (_value !is Entry.Value.Nullable<*> && value == null) throw IllegalArgumentException(
             "Entry <$entry> is not of a nullable type, but the provided 'value' was null."
         )
-        
+
         when (_value) {
             is NullableValue<*> -> (_value as Entry.Value.Nullable<V>).value = value
             is NormalValue<*> -> (_value as Entry.Value.Normal<V>).value = value!! // we know that it's not null.
@@ -200,7 +166,7 @@ interface Layer : Iterable<Entry<*>> {
                 when (value) {
                     !is Comparable<*> -> throw IllegalArgumentException(
                         "The given value <$value> is not comparable, but an attempt to set the value of an entry of " +
-                                "the 'limited' type was made with it"
+                            "the 'limited' type was made with it"
                     )
                     // we need to set this value via reflection because 'V' is not a covariant of 'Comparable<V>'.
                     else -> _value::value.set(value)
@@ -214,33 +180,10 @@ interface Layer : Iterable<Entry<*>> {
                 )
             }
         }
-        
+
         return this
     }
-    
-    /**
-     * Sets the value of the [Entry] stored under the specified [path] to the specified [value].
-     *
-     * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
-     * the last entry of the delimited array is the name of the entry, i.e;
-     *
-     * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
-     * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
-     * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
-     * is stored under the `name` in the [entries] of that layer.
-     *
-     * @param [path] The path of the entry to modify the value of.
-     * @param [value] The new value.
-     *
-     * @throws [NoSuchElementException] If there exists no [Entry] stored under the specified [path].
-     * @throws [IllegalArgumentException] If the found [Entry] is *not* a [nullable][Entry.Value.Nullable] type, but
-     * the specified [value] is `null`.
-     */
-    @JvmSynthetic
-    operator fun <V : Any> set(path: String, value: V?) {
-        setValue(path, value)
-    }
-    
+
     /**
      * Returns the raw `value` of the [entry][Entry] stored under the specified [path], or it throws a
      * [NoSuchElementException] if no `entry` is found.
@@ -267,65 +210,10 @@ interface Layer : Iterable<Entry<*>> {
      * @see invoke
      * @see getNullable
      */
-    @JvmDefault
-    operator fun <V : Any> get(path: String): V =
+    @JvmDefault operator fun <V> get(path: String): V =
         getNullable(path)
             ?: throw IllegalArgumentException("Entry stored under the path <$path> is of the nullable type.")
-    
-    /**
-     * Returns the raw `value` of the [entry][Entry] stored under the specified [path], or it throws a
-     * [NoSuchElementException] if no `entry` is found.
-     *
-     * This function is simply here to "replicate" the behaviour of the index operator while still being able to
-     * explicitly cast a generic.
-     *
-     * Explanation:
-     *
-     * ```kotlin
-     *  // this will not compile, as it's not obvious to the compiler what the type of the entry under the name
-     *  // "entryName" is, and it needs to be specified explicitly.
-     *  val entry = config["entryName"]
-     *
-     *  // however, you can't specify a generic explicitly when using the index operator.
-     *  // which means that this would not compile either
-     *  val entry = config<String>["entryName"]
-     *
-     *  // which means that you would either need to do this
-     *  val entry = config.get<String>("entryName")
-     *  // or this
-     *  val entry: String = config["entryName"]
-     *
-     *  // but with this function you can just do
-     *  val entry = config<String>("entryName")
-     * ```
-     *
-     * As this function is `null-safe` it is not recommended to use this to retrieve the value of an `entry` that is
-     * of the [nullable][Entry.Value.Nullable] type, as it may return a value that's `null`, which will result in a
-     * [IllegalArgumentException] being thrown. It is recommended to use [getNullable] for the retrieval of such items
-     * instead. If you do not know what type the `entry` is before-hand, it is also recommended to use that function.
-     *
-     * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
-     * the last entry of the delimited array is the name of the entry, i.e;
-     *
-     * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
-     * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
-     * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
-     * is stored under the `name` in the [entries] of that layer.
-     *
-     * @param [path] The path to look up the `entry` under.
-     *
-     * @throws [NoSuchElementException] If no [entry][Entry] is stored under the specified [path].
-     * @throws [IllegalArgumentException] If the returned [entry][Entry]  is of the [nullable][Entry.Value.Nullable]
-     * type.
-     *
-     * @see get
-     * @see getNullable
-     */
-    @JvmSynthetic
-    operator fun <V : Any> invoke(path: String): V =
-        getNullable(path)
-            ?: throw IllegalArgumentException("Entry stored under the path <$path> is of the nullable type")
-    
+
     /**
      * Returns the raw `value` of the [entry][Entry] stored under the specified [path], or `null` if none is found.
      *
@@ -344,8 +232,7 @@ interface Layer : Iterable<Entry<*>> {
      * @see get
      * @see invoke
      */
-    @JvmDefault
-    fun <V : Any> getNullable(path: String): V? {
+    @JvmDefault fun <V> getNullable(path: String): V? {
         val _path = path.sanitizePath()
         return when (val entry = getEntry<V>(_path).value) {
             is NullableValue<*> -> entry.value as V?
@@ -357,7 +244,7 @@ interface Layer : Iterable<Entry<*>> {
             is DynamicValue<*> -> entry.value as V
         }
     }
-    
+
     /**
      * Returns the raw `default` of the [entry][Entry] stored under the specified [path], or it throws a
      * [NoSuchElementException] if no `entry` is found.
@@ -387,11 +274,10 @@ interface Layer : Iterable<Entry<*>> {
      * @see invoke
      * @see getNullable
      */
-    @JvmDefault
-    fun <V : Any> getDefault(path: String): V =
+    @JvmDefault fun <V> getDefault(path: String): V =
         getNullableDefault(path)
             ?: throw IllegalArgumentException("Entry stored under the path <$path> is of the nullable type")
-    
+
     /**
      * Returns the raw `default` of the [entry][Entry] stored under the specified [path], or `null` if none is found.
      *
@@ -411,8 +297,7 @@ interface Layer : Iterable<Entry<*>> {
      *
      * @see getDefault
      */
-    @JvmDefault
-    fun <V : Any> getNullableDefault(path: String): V? {
+    @JvmDefault fun <V> getNullableDefault(path: String): V? {
         val _path = path.sanitizePath()
         return when (val entry = getEntry<V>(_path).value) {
             is NullableValue<*> -> entry.default as V?
@@ -424,7 +309,7 @@ interface Layer : Iterable<Entry<*>> {
             )
         }
     }
-    
+
     /**
      * Returns whether or not there's an entry stored under the specified [path] in `this` layer, or any of it's
      * sub-layers.
@@ -439,10 +324,9 @@ interface Layer : Iterable<Entry<*>> {
      *
      * @param [path] The path to the entry.
      */
-    @JvmDefault
-    operator fun contains(path: String): Boolean {
+    @JvmDefault operator fun contains(path: String): Boolean {
         val _path = path.sanitizePath()
-        
+
         return if ('/' in _path) {
             val name = path.substringAfterLast('/')
             val layer = getLayer(path.substringBeforeLast('/').sanitizePath())
@@ -451,7 +335,7 @@ interface Layer : Iterable<Entry<*>> {
             _path in entries
         }
     }
-    
+
     /**
      * Returns the [entry][Entry] stored under the specified [path], or it will throw a [NoSuchElementException] if
      * none is found.
@@ -464,10 +348,9 @@ interface Layer : Iterable<Entry<*>> {
      * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
      * is stored under the `name` in the [entries] of that layer.
      */
-    @JvmDefault
-    fun <V : Any> getEntry(path: String): Entry<V> =
+    @JvmDefault fun <V> getEntry(path: String): Entry<V> =
         getEntryOrNull(path) ?: throw NoSuchElementException("No entry found under the path <$path> in <$this>")
-    
+
     /**
      * Returns the [entry][Entry] stored under the specified [path], or `null` if none can be found.
      *
@@ -479,10 +362,9 @@ interface Layer : Iterable<Entry<*>> {
      * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
      * is stored under the `name` in the [entries] of that layer.
      */
-    @JvmDefault
-    fun <V : Any> getEntryOrNull(path: String): Entry<V>? {
+    @JvmDefault fun <V> getEntryOrNull(path: String): Entry<V>? {
         val _path = path.sanitizePath()
-        
+
         return if ('/' in _path) {
             val name = path.substringAfterLast('/')
             val layer = getLayer(path.substringBeforeLast('/').sanitizePath())
@@ -491,7 +373,7 @@ interface Layer : Iterable<Entry<*>> {
             entries[_path] as? Entry<V>
         }
     }
-    
+
     /**
      * Resets all the [entries] on `this` layer.
      *
@@ -499,14 +381,13 @@ interface Layer : Iterable<Entry<*>> {
      *
      * @see resetAllEntries
      */
-    @JvmDefault
-    fun resetEntries() {
+    @JvmDefault fun resetEntries() {
         for (entry in this) {
             // so that we don't cause a 'IllegalAccessException'
             if (entry.value.isMutable) entry.value.reset()
         }
     }
-    
+
     /**
      * Resets all the [entries] on `this` layer, and the entries of all sub-layers.
      *
@@ -514,19 +395,18 @@ interface Layer : Iterable<Entry<*>> {
      *
      * @see resetEntries
      */
-    @JvmDefault
-    fun resetAllEntries() {
+    @JvmDefault fun resetAllEntries() {
         resetEntries()
         for ((_, subLayer) in layers) subLayer.resetAllEntries()
     }
-    
+
     /**
      * Creates a valid path for storage and retrieval.
      */
     fun String.sanitizePath(): String
-    
+
     // layers
-    
+
     /**
      * Adds the specified [layer] to `this` layer storage.
      *
@@ -541,7 +421,7 @@ interface Layer : Iterable<Entry<*>> {
      * @return `this` layer
      */
     fun addLayer(layer: Layer): Layer
-    
+
     /**
      * Adds all the layers contained in the specified [layers].
      *
@@ -555,12 +435,11 @@ interface Layer : Iterable<Entry<*>> {
      *
      * @return `this` layer
      */
-    @JvmDefault
-    fun addLayers(layers: Collection<Layer>): Layer {
+    @JvmDefault fun addLayers(layers: Iterable<Layer>): Layer {
         for (layer in layers) addLayer(layer)
         return this
     }
-    
+
     /**
      * Creates a new [Layer] from the specified [path] and then adds it to `this` layer.
      *
@@ -592,7 +471,7 @@ interface Layer : Iterable<Entry<*>> {
     // this one returns the created layer rather than 'this' layer so that the user can configure the newly created
     // layer.
     fun addLayer(path: String): Layer
-    
+
     /**
      * Creates new layers from the specified [paths] and then adds all of them to `this` layer.
      *
@@ -622,24 +501,22 @@ interface Layer : Iterable<Entry<*>> {
      * @throws [IllegalArgumentException] If one of the `strings` in the specified [paths] does ***not*** end with the
      * `'/'` character, or if one of the `strings` is not a valid path.
      */
-    @JvmDefault
-    fun addLayers(vararg paths: String): Layer {
+    @JvmDefault fun addLayers(vararg paths: String): Layer {
         for (path in paths) addLayer(path)
         return this
     }
-    
+
     /**
      * Removes the specified [layer] from `this` layer, or throws a [NoSuchElementException] if `layer` is not a
      * sub-layer of `this` layer.
      *
      * @throws [NoSuchElementException] If [layer] is not a sub-layer of `this` layer.
      */
-    @JvmDefault
-    fun removeLayer(layer: Layer): Layer {
+    @JvmDefault fun removeLayer(layer: Layer): Layer {
         removeLayer(layer.name)
         return this
     }
-    
+
     /**
      * Removes the the [layer][Layer] stored under the specified [path] from `this` layer, or throws a
      * [NoSuchElementException] if there is no `layer` stored under the specified [path].
@@ -648,24 +525,22 @@ interface Layer : Iterable<Entry<*>> {
      * layer.
      */
     fun removeLayer(path: String): Layer
-    
+
     // TODO: Better the documentation with explanation that you can traverse sub-layers.
-    
+
     /**
      * Returns the [layer][Layer] stored under the specified [path], or throws a [NoSuchElementException] if none is
      * found.
      */
-    @JvmDefault
-    fun getLayer(path: String): Layer =
+    @JvmDefault fun getLayer(path: String): Layer =
         getLayerOrNull(path) ?: throw NoSuchElementException("No layer found under the path <$path> in <$this>")
-    
+
     /**
      * Returns the [layer][Layer] stored under the specified [path], or `null` if none exists.
      */
-    @JvmDefault
-    fun getLayerOrNull(path: String): Layer? {
+    @JvmDefault fun getLayerOrNull(path: String): Layer? {
         val _path = path.substringAfter("$name/")
-        
+
         return when {
             _path.isBlank() -> this
             '/' in _path -> {
@@ -675,7 +550,7 @@ interface Layer : Iterable<Entry<*>> {
             else -> layers[_path]
         }
     }
-    
+
     /**
      * Updates the path of any sub-layers of `this` layer.
      */
@@ -683,33 +558,135 @@ interface Layer : Iterable<Entry<*>> {
 }
 
 /**
+ * Adds the specified [entry] to `this` layer.
+ *
+ * The `entry` gets stored under it's [name][Entry.name] property.
+ *
+ * @param [entry] the [Entry] to add to `this` storage
+ */
+operator fun <V> Layer.plusAssign(entry: Entry<V>) {
+    addEntry(entry)
+}
+
+/**
+ * Removes the entry stored under the specified [path] from `this` layer, or throws a [NoSuchElementException] if
+ * no entry is found.
+ *
+ * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
+ * the last entry of the delimited array is the name of the entry, i.e;
+ *
+ * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
+ * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
+ * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to remove whatever
+ * is stored under the `name` in the [entries] of that layer.
+ *
+ * @param [path] The path to the entry to remove.
+ * @throws [NoSuchElementException] If no `entry` in `this` storage is stored under the specified [path].
+ */
+operator fun Layer.minusAssign(path: String) {
+    removeEntry(path)
+}
+
+/**
+ * Sets the value of the [Entry] stored under the specified [path] to the specified [value].
+ *
+ * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
+ * the last entry of the delimited array is the name of the entry, i.e;
+ *
+ * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
+ * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
+ * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
+ * is stored under the `name` in the [entries] of that layer.
+ *
+ * @param [path] The path of the entry to modify the value of.
+ * @param [value] The new value.
+ *
+ * @throws [NoSuchElementException] If there exists no [Entry] stored under the specified [path].
+ * @throws [IllegalArgumentException] If the found [Entry] is *not* a [nullable][Entry.Value.Nullable] type, but
+ * the specified [value] is `null`.
+ */
+operator fun <V> Layer.set(path: String, value: V?) {
+    setValue(path, value)
+}
+
+/**
+ * Returns the raw `value` of the [entry][Entry] stored under the specified [path], or it throws a
+ * [NoSuchElementException] if no `entry` is found.
+ *
+ * This function is simply here to "replicate" the behaviour of the index operator while still being able to
+ * explicitly cast a generic.
+ *
+ * Explanation:
+ *
+ * ```kotlin
+ *  // this will not compile, as it's not obvious to the compiler what the type of the entry under the name
+ *  // "entryName" is, and it needs to be specified explicitly.
+ *  val entry = config["entryName"]
+ *
+ *  // however, you can't specify a generic explicitly when using the index operator.
+ *  // which means that this would not compile either
+ *  val entry = config<String>["entryName"]
+ *
+ *  // which means that you would either need to do this
+ *  val entry = config.get<String>("entryName")
+ *  // or this
+ *  val entry: String = config["entryName"]
+ *
+ *  // but with this function you can just do
+ *  val entry = config<String>("entryName")
+ * ```
+ *
+ * As this function is `null-safe` it is not recommended to use this to retrieve the value of an `entry` that is
+ * of the [nullable][Entry.Value.Nullable] type, as it may return a value that's `null`, which will result in a
+ * [IllegalArgumentException] being thrown. It is recommended to use [getNullable] for the retrieval of such items
+ * instead. If you do not know what type the `entry` is before-hand, it is also recommended to use that function.
+ *
+ * This function works in the way that it delimits the given `path` based on the `/` character, and it assumes that
+ * the last entry of the delimited array is the name of the entry, i.e;
+ *
+ * Suppose you invoke this function with `path` as `"layer_one/layer_two/entry_one"`, that string will then be
+ * split up into the following sequence; `layers:["layer_one", "layer_two"], name:"entry_one"`, it will then scope
+ * into each `layer` recursively until it reaches a dead-end, at which point it will attempt to retrieve whatever
+ * is stored under the `name` in the [entries] of that layer.
+ *
+ * @param [path] The path to look up the `entry` under.
+ *
+ * @throws [NoSuchElementException] If no [entry][Entry] is stored under the specified [path].
+ * @throws [IllegalArgumentException] If the returned [entry][Entry]  is of the [nullable][Entry.Value.Nullable]
+ * type.
+ *
+ * @see get
+ * @see getNullable
+ */
+operator fun <V> Layer.invoke(path: String): V = this.get(path)
+
+/**
  * A config layer.
  */
 @Suppress("LeakingThis")
 open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
-    
     @set:JvmSynthetic
     final override var path: String = "$name/"
         internal set
-    
+
     /**
      * The underlying map of `this` layer storage.
      */
     private val _layers: MutableMap<String, Layer> = LinkedHashMap()
-    
+
     final override val layers: Map<String, Layer> get() = _layers.toMap()
-    
+
     /**
      * The underlying map of `this` entry storage.
      */
     private val _entries: MutableMap<String, Entry<*>> = LinkedHashMap()
-    
+
     final override val entries: Map<String, Entry<*>> get() = _entries.toMap()
-    
+
     @set:JvmSynthetic
     final override lateinit var parent: Layer
         internal set
-    
+
     /**
      * Returns whether or not `this` layer has a parent layer.
      *
@@ -717,13 +694,13 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
      * layer is top-level.
      */
     final override val hasParent: Boolean get() = this::parent.isInitialized
-    
+
     // init
     init {
         if (javaClass.isKotlinClass) {
             val nestedClasses = this::class.nestedClasses
             val children = nestedClasses.mapNotNull { it.objectInstance }.filterIsInstance<KonfigLayer>()
-            
+
             for (layer in children) {
                 layer.parent = this
                 layer.path = "${layer.parent.path}${layer.path}"
@@ -731,20 +708,20 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
             }
         }
     }
-    
+
     // entries
-    
-    final override fun <V : Any> addEntry(entry: Entry<V>): Layer = addEntry(entry, entry.name)
-    
-    final override fun <V : Any> addEntry(entry: Entry<V>, name: String): Layer {
+
+    final override fun <V> addEntry(entry: Entry<V>): Layer = addEntry(entry, entry.name)
+
+    final override fun <V> addEntry(entry: Entry<V>, name: String): Layer {
         _entries[name.sanitizePath()] = entry
-        
+
         return this
     }
-    
+
     final override fun removeEntry(path: String): Layer {
         val _path = path.sanitizePath()
-        
+
         if ('/' in _path) {
             val name = path.substringAfterLast('/')
             val layer = getLayer(path.substringBeforeLast('/').sanitizePath()) as KonfigLayer
@@ -752,49 +729,49 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         } else {
             _entries -= _path
         }
-        
+
         return this
     }
-    
+
     final override fun String.sanitizePath(): String {
         var _str = replace("/+".toRegex(), "/")
-        
+
         if (_str.startsWith("./")) _str = "$path${_str.substringAfter("./")}"
         if (_str.startsWith('/')) _str = _str.substringAfter('/')
-        
+
         return _str
     }
-    
+
     // layers
-    
+
     final override fun addLayer(layer: Layer): Layer {
         // if layer somehow isn't a *KonfigLayer*, then it's up to whoever decided to make a different
         // implementation to fix the resulting error, have fun.
         (layer as KonfigLayer).parent = this
-        
+
         _layers[layer.name] = layer
-        
+
         updatePaths()
-        
+
         return this
     }
-    
+
     final override fun removeLayer(path: String): Layer {
         _layers -= path.sanitizePath()
-        
+
         return this
     }
-    
+
     final override fun addLayer(path: String): Layer {
         val _path = path.sanitizePath()
         if (!_path.endsWith('/')) throw IllegalArgumentException("Provided path <$path> does not end with a '/'")
-        
+
         when {
             _path.isBlank() -> throw IllegalArgumentException("Provided path <$path> became blank after sanitation")
             '/' in _path -> {
                 val firstLayer = _path.substringBefore('/')
                 val remainingLayers = _path.substringAfter('/')
-                
+
                 when {
                     firstLayer in _layers -> {
                         // we know that this is safe because of the check above.
@@ -823,7 +800,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
             }
         }
     }
-    
+
     override fun updatePaths() {
         for ((_, subLayer) in _layers) {
             // if layer somehow isn't a *KonfigLayer*, then it's up to whoever decided to make a different
@@ -832,7 +809,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
             subLayer.updatePaths()
         }
     }
-    
+
     // iterable
     /**
      * An iterator for all the `entries` stored in `this` layer.
@@ -841,24 +818,23 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
      * any of its sub-layers.
      */
     final override fun iterator(): Iterator<Entry<*>> = entries.values.iterator()
-    
+
     // delegate functions
     /**
      * A delegates function for creating a [NullableEntry] and automagically adding it to `this` layer.
      */
-    inline fun <reified V : Any> nullable(
+    inline fun <reified V> nullable(
         name: String? = null,
         description: String,
         default: V?,
         value: V? = default
-    ) =
-        object : DelegatedNullableProperty<V>(
-            name = name,
-            description = description,
-            default = default,
-            value = value
-        ) {}
-    
+    ) = object : DelegatedNullableProperty<V>(
+        name = name,
+        description = description,
+        default = default,
+        value = value
+    ) {}
+
     /**
      * A delegates function for creating a [NormalEntry] and automagically adding it to `this` layer.
      */
@@ -867,14 +843,13 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         description: String,
         default: V,
         value: V = default
-    ) =
-        object : DelegatedNormalProperty<V>(
-            name = name,
-            description = description,
-            default = default,
-            value = value
-        ) {}
-    
+    ) = object : DelegatedNormalProperty<V>(
+        name = name,
+        description = description,
+        default = default,
+        value = value
+    ) {}
+
     /**
      * A delegates function for creating a [LimitedEntry] and automagically adding it to `this` layer.
      */
@@ -891,7 +866,7 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         default = default,
         value = value
     ) {}
-    
+
     /**
      * A delegates function for creating a [LimitedStringEntry] and automagically adding it to `this` layer.
      */
@@ -901,35 +876,26 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         range: IntRange,
         default: String,
         value: String = default
-    ) =
-        object : DelegatedLimitedStringProperty(
-            name = name,
-            description = description,
-            range = range,
-            default = default,
-            value = value
-        ) {}
-    
+    ) = object : DelegatedLimitedStringProperty(
+        name = name,
+        description = description,
+        range = range,
+        default = default,
+        value = value
+    ) {}
+
     /**
      * A delegates function for creating a [ConstantEntry] and automagically adding it to `this` layer.
      */
     inline fun <reified V : Any> constant(name: String? = null, description: String, value: V) =
-        object : DelegatedConstantProperty<V>(
-            name = name,
-            description = description,
-            value = value
-        ) {}
-    
+        object : DelegatedConstantProperty<V>(name = name, description = description, value = value) {}
+
     /**
      * A delegates function for creating a [LazyEntry] and automagically adding it to `this` layer.
      */
     inline fun <reified V : Any> lazy(name: String? = null, description: String, noinline closure: () -> V) =
-        object : DelegatedLazyProperty<V>(
-            name = name,
-            description = description,
-            value = closure
-        ) {}
-    
+        object : DelegatedLazyProperty<V>(name = name, description = description, value = closure) {}
+
     /**
      * A delegates function for creating a [DynamicEntry] and automagically adding it to `this` layer.
      */
@@ -937,14 +903,10 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         name: String? = null,
         description: String,
         noinline closure: () -> V
-    ) = object : DelegatedDynamicProperty<V>(
-        description = description,
-        value = closure,
-        name = name
-    ) {}
-    
+    ) = object : DelegatedDynamicProperty<V>(description = description, value = closure, name = name) {}
+
     final override fun toString(): String = "KonfigLayer(name='$name', path='$path')"
-    
+
     override fun equals(other: Any?): Boolean = when {
         this === other -> true
         other !is KonfigLayer -> false
@@ -956,7 +918,6 @@ open class KonfigLayer(override val name: String) : Layer, Iterable<Entry<*>> {
         (hasParent && other.hasParent) && parent != other.parent -> false
         else -> true
     }
-    
+
     override fun hashCode(): Int = Objects.hash(name, path, _layers, _entries, parent)
-    
 }

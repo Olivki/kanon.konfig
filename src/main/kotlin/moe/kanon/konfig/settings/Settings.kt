@@ -25,8 +25,7 @@ import moe.kanon.konfig.providers.JsonProvider
 import moe.kanon.konfig.providers.Provider
 import moe.kanon.konfig.providers.XmlProvider
 
-@DslMarker
-annotation class KonfigSettingsMarker
+@DslMarker annotation class KonfigSettingsMarker
 
 // TODO: Add a setting for falling back to default value if the loading of a setting fails.
 
@@ -81,6 +80,13 @@ data class KonfigSettings private constructor(
      */
     val faultyParsedValueAction: FaultyParsedValueAction = FaultyParsedValueAction.FALLBACK_TO_DEFAULT
 ) {
+    companion object {
+        /**
+         * The default settings used by the system.
+         */
+        @JvmStatic @KonfigSettingsMarker val default: KonfigSettings get() = KonfigSettings()
+    }
+
     /**
      * What sort of action the system should take when encountering a unknown [entry][Entry] in the
      * [config file][Konfig.file].
@@ -90,8 +96,7 @@ data class KonfigSettings private constructor(
      *
      * ([IGNORE][UnknownEntryBehaviour.IGNORE] by default)
      */
-    @KonfigSettingsMarker
-    fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings =
+    @KonfigSettingsMarker fun onUnknownEntry(behaviour: UnknownEntryBehaviour): KonfigSettings =
         this.copy(onUnknownEntry = behaviour)
     
     /**
@@ -101,8 +106,7 @@ data class KonfigSettings private constructor(
      *
      * ([KOTLIN][GenericPrintingStyle.KOTLIN] by default)
      */
-    @KonfigSettingsMarker
-    fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings =
+    @KonfigSettingsMarker fun genericPrintingStyle(style: GenericPrintingStyle): KonfigSettings =
         this.copy(genericPrintingStyle = style)
     
     /**
@@ -114,8 +118,7 @@ data class KonfigSettings private constructor(
      *
      * (`true` by default)
      */
-    @KonfigSettingsMarker
-    fun printDefaultValue(predicate: Boolean): KonfigSettings =
+    @KonfigSettingsMarker fun printDefaultValue(predicate: Boolean): KonfigSettings =
         this.copy(printDefaultValue = predicate)
     
     /**
@@ -126,8 +129,7 @@ data class KonfigSettings private constructor(
      *
      * ([IN_TAG][XmlRootNamePlacement.IN_TAG] by default)
      */
-    @KonfigSettingsMarker
-    fun xmlRootNamePlacement(placement: XmlRootNamePlacement): KonfigSettings =
+    @KonfigSettingsMarker fun xmlRootNamePlacement(placement: XmlRootNamePlacement): KonfigSettings =
         this.copy(xmlRootNamePlacement = placement)
     
     /**
@@ -136,19 +138,8 @@ data class KonfigSettings private constructor(
      *
      * ([FALLBACK_TO_DEFAULT][FaultyParsedValueAction.FALLBACK_TO_DEFAULT] by default)
      */
-    @KonfigSettingsMarker
-    fun faultyParsedValueAction(action: FaultyParsedValueAction): KonfigSettings =
+    @KonfigSettingsMarker fun faultyParsedValueAction(action: FaultyParsedValueAction): KonfigSettings =
         this.copy(faultyParsedValueAction = action)
-    
-    companion object {
-        /**
-         * The default settings used by the system.
-         */
-        @JvmStatic
-        @KonfigSettingsMarker
-        val default: KonfigSettings
-            get() = KonfigSettings()
-    }
 }
 
 /**

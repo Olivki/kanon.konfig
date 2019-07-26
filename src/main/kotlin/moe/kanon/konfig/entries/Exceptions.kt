@@ -23,27 +23,24 @@ open class ValueOutsideOfRangeException(message: String, val value: Any, val ran
          * Creates a new [ValueOutsideOfRangeException] with a [message][ValueOutsideOfRangeException.message]
          * populated by the specified [value] and [range].
          *
-         * @param [value] The value that caused `this` exception to be thrown.
-         * @param [range] The range that the [value] did not fit inside of.
+         * @param [value] the value that caused `this` exception to be thrown
+         * @param [range] the range that the [value] did not fit inside of
          */
-        @JvmStatic
-        fun <V : Comparable<V>> create(value: V, range: ClosedRange<V>): ValueOutsideOfRangeException =
+        @JvmStatic fun <V : Comparable<V>> of(value: V, range: ClosedRange<V>): ValueOutsideOfRangeException =
             ValueOutsideOfRangeException("The given value <$value> is outside of the set range <$range>", value, range)
-        
+
         /**
          * Creates a new [ValueOutsideOfRangeException] with a [message][ValueOutsideOfRangeException.message]
          * populated by the specified [value] and [range].
          *
-         * @param [value] The value that caused `this` exception to be thrown.
-         * @param [range] The range that the [value] did not fit inside of.
+         * @param [value] the value that caused `this` exception to be thrown
+         * @param [range] the range that the [value] did not fit inside of
          */
-        @JvmStatic
-        fun create(value: String, range: IntRange): ValueOutsideOfRangeException =
-            ValueOutsideOfRangeException(
-                "The length <${value.length}> of the given string <'$value'> is outside of the set range <$range>",
-                value,
-                range
-            )
-        
+        @JvmStatic fun of(value: String, range: IntRange): ValueOutsideOfRangeException = ValueOutsideOfRangeException(
+            "The length <${value.length}> of the given string <'$value'> is outside of the set range <$range>",
+            value,
+            range
+        )
+
     }
 }

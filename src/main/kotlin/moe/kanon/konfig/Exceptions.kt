@@ -22,33 +22,16 @@ import java.nio.file.Path
 
 /**
  * Thrown to indicate that something went wrong when attempting to deserialize a file into a [Konfig] instance.
+ *
+ * @property [konfig] The [Konfig] instance that this exception stems from.
+ * @property [file] The file that this exception stems from.
  */
-open class KonfigDeserializationException : IOException {
-    
-    /**
-     * The [Konfig] instance that `this` exception stems from.
-     */
-    val konfig: Konfig
-    /**
-     * The file that `this` exception stems from.
-     */
-    val file: Path
-    
-    constructor(konfig: Konfig, file: Path, message: String) : super(message) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, message: String, cause: Throwable) : super(message, cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, cause: Throwable) : super(cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
+open class KonfigDeserializationException @JvmOverloads constructor(
+    val konfig: Konfig,
+    val file: Path,
+    message: String? = null,
+    cause: Throwable? = null
+) : IOException(message, cause) {
     companion object {
         /**
          * Creates a [KonfigDeserializationException] with a [message] populated by the specified [konfig], [file] and
@@ -58,14 +41,13 @@ open class KonfigDeserializationException : IOException {
          * @param [file] the file that was being loaded
          * @param [info] any extra info regarding the failure
          */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String): KonfigDeserializationException =
+        @JvmStatic fun of(konfig: Konfig, file: Path, info: String): KonfigDeserializationException =
             KonfigDeserializationException(
                 konfig,
                 file,
                 "An error occurred when attempting to deserialize the file <$file> into the konfig <${konfig.name}>: $info"
             )
-        
+
         /**
          * Creates a [KonfigDeserializationException] with a [message] populated by the specified [konfig], [file],
          * [info] and [cause].
@@ -75,8 +57,7 @@ open class KonfigDeserializationException : IOException {
          * @param [info] any extra info regarding the failure
          * @param [cause] the original cause of `this` exception
          */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigDeserializationException =
+        @JvmStatic fun of(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigDeserializationException =
             KonfigDeserializationException(
                 konfig,
                 file,
@@ -88,33 +69,16 @@ open class KonfigDeserializationException : IOException {
 
 /**
  * Thrown to indicate that something went wrong when attempting to serialize a [Konfig] instance to a file.
+ *
+ * @property [konfig] The [Konfig] instance that this exception stems from.
+ * @property [file] The file that this exception stems from.
  */
-open class KonfigSerializationException : IOException {
-    
-    /**
-     * The [Konfig] instance that `this` exception stems from.
-     */
-    val konfig: Konfig
-    /**
-     * The file that `this` exception stems from.
-     */
-    val file: Path
-    
-    constructor(konfig: Konfig, file: Path, message: String) : super(message) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, message: String, cause: Throwable) : super(message, cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
-    constructor(konfig: Konfig, file: Path, cause: Throwable) : super(cause) {
-        this.konfig = konfig
-        this.file = file
-    }
-    
+open class KonfigSerializationException @JvmOverloads constructor(
+    val konfig: Konfig,
+    val file: Path,
+    message: String? = null,
+    cause: Throwable? = null
+) : IOException(message, cause) {
     companion object {
         /**
          * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file] and
@@ -124,14 +88,13 @@ open class KonfigSerializationException : IOException {
          * @param [file] the file that the [konfig] is being serialized to
          * @param [info] any extra info regarding the failure
          */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String): KonfigSerializationException =
+        @JvmStatic fun of(konfig: Konfig, file: Path, info: String): KonfigSerializationException =
             KonfigSerializationException(
                 konfig,
                 file,
                 "An error occurred when attempting to serialize the konfig <$konfig> to the file <$file>: $info"
             )
-        
+
         /**
          * Creates a [KonfigSerializationException] with a [message] populated by the specified [konfig], [file],
          * [info] and [cause].
@@ -141,8 +104,7 @@ open class KonfigSerializationException : IOException {
          * @param [info] any extra info regarding the failure
          * @param [cause] the original cause of `this` exception
          */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigSerializationException =
+        @JvmStatic fun of(konfig: Konfig, file: Path, info: String, cause: Throwable): KonfigSerializationException =
             KonfigSerializationException(
                 konfig,
                 file,
@@ -161,8 +123,14 @@ open class KonfigSerializationException : IOException {
  * @property [entry] The name and some additional info regarding the unknown entry that `this` exception stems from.
  * @property [layer] The layer that the system is currently on that `this` exception stems from.
  */
-open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, val layer: String, message: String) :
-    KonfigDeserializationException(konfig, file, message) {
+open class UnknownEntryException @JvmOverloads constructor(
+    konfig: Konfig,
+    file: Path,
+    val entry: String,
+    val layer: String,
+    message: String? = null,
+    cause: Throwable? = null
+) : KonfigDeserializationException(konfig, file, message, cause) {
     companion object {
         /**
          * Creates a [UnknownEntryException] with a [message] populated by the specified [konfig], [file], [entry] and
@@ -173,8 +141,7 @@ open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, 
          * @param [entry] the name and some additional info regarding the unknown entry
          * @param [layer] the layer that the system is currently on
          */
-        @JvmStatic
-        fun create(konfig: Konfig, file: Path, entry: String, layer: String): UnknownEntryException =
+        @JvmStatic fun of(konfig: Konfig, file: Path, entry: String, layer: String): UnknownEntryException =
             UnknownEntryException(
                 konfig,
                 file,
@@ -188,61 +155,21 @@ open class UnknownEntryException(konfig: Konfig, file: Path, val entry: String, 
 /**
  * Thrown to indicate that the system encountered a problem when trying to parse a value from a configuration file.
  *
- * @param [konfig] the [Konfig] instance that `this` exception stems from.
- * @param [file] the file that `this` exception stems from.
+ * @property [faultyValue] The parsed value that was deemed faulty.
+ * @property [entry] The [Entry] that the value belongs to.
+ * @property [entryKey] The key that the [Entry] is stored under in the [layer].
+ * @property [layer] The [Layer] that the [entry] belongs to.
  */
-open class FaultyParsedValueException : KonfigDeserializationException {
-    /**
-     * The parsed value that was deemed faulty.
-     */
-    val faultyValue: Any?
-    
-    /**
-     * The [Entry] that the value belongs to.
-     */
-    val entry: Entry<*>
-    
-    /**
-     * The key that the [Entry] is stored under in the [layer].
-     */
-    val entryKey: String
-    
-    /**
-     * The [Layer] that the [entry] belongs to.
-     */
-    val layer: Layer
-    
-    constructor(
-        konfig: Konfig,
-        file: Path,
-        faultyValue: Any?,
-        entry: Entry<*>,
-        entryKey: String,
-        layer: Layer,
-        message: String
-    ) : super(konfig, file, message) {
-        this.faultyValue = faultyValue
-        this.entry = entry
-        this.entryKey = entryKey
-        this.layer = layer
-    }
-    
-    constructor(
-        konfig: Konfig,
-        file: Path,
-        faultyValue: Any?,
-        entry: Entry<*>,
-        entryKey: String,
-        layer: Layer,
-        message: String,
-        cause: Throwable
-    ) : super(konfig, file, message, cause) {
-        this.faultyValue = faultyValue
-        this.entry = entry
-        this.entryKey = entryKey
-        this.layer = layer
-    }
-    
+open class FaultyParsedValueException @JvmOverloads constructor(
+    konfig: Konfig,
+    file: Path,
+    val faultyValue: Any?,
+    val entry: Entry<*>,
+    val entryKey: String,
+    val layer: Layer,
+    message: String? = null,
+    cause: Throwable? = null
+) : KonfigDeserializationException(konfig, file, message, cause) {
     companion object {
         /**
          * Creates and returns a [FaultyParsedValueException] with a [message] populated by the the specified [konfig],
@@ -255,8 +182,7 @@ open class FaultyParsedValueException : KonfigDeserializationException {
          * @param [entryKey] the key that the [entry] is stored under in the specified [layer]
          * @param [layer] the [Layer] that the [entry] belongs to
          */
-        @JvmStatic
-        fun create(
+        @JvmStatic fun of(
             konfig: Konfig,
             file: Path,
             faultyValue: Any?,
@@ -274,7 +200,7 @@ open class FaultyParsedValueException : KonfigDeserializationException {
                 entryKey
             )}>"
         )
-    
+
         /**
          * Creates and returns a [FaultyParsedValueException] with a [message] populated by the the specified [konfig],
          * [file], [faultyValue], [entry], [entryKey], [layer] and [cause].
@@ -287,8 +213,7 @@ open class FaultyParsedValueException : KonfigDeserializationException {
          * @param [layer] the [Layer] that the [entry] belongs to
          * @param [cause] the original cause of `this` exception
          */
-        @JvmStatic
-        fun create(
+        @JvmStatic fun of(
             konfig: Konfig,
             file: Path,
             faultyValue: Any?,
