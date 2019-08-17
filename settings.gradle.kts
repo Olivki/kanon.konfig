@@ -1,10 +1,4 @@
-pluginManagement {
-    repositories {
-        jcenter()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
+include("core", "provider-json", "provider-xml")
 
 rootProject.name = "kanon.konfig"
 
