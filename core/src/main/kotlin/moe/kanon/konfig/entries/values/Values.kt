@@ -17,7 +17,12 @@
 package moe.kanon.konfig.entries.values
 
 import moe.kanon.kommons.UNSUPPORTED
+import moe.kanon.kommons.requireThat
+import moe.kanon.konfig.ConfigException
+import moe.kanon.konfig.internal.TypeToken
 import java.lang.reflect.Type
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 data class ValueSetter<V : Value, T>(val ref: V, var field: T, val value: T)
 
@@ -28,7 +33,20 @@ sealed class Value(val name: String, val isMutable: Boolean, val shouldDeseriali
      * Sets the `value` of this value-class to its `default` value, if it has one, otherwise does nothing.
      */
     open fun resetValue() {
-        UNSUPPORTED("Can't reset value of a '$name'")
+        UNSUPPORTED("Can't reset value of a '$name' value")
+    }
+
+    protected inline fun validateType(valueClass: KClass<*>, topClass: KClass<*>) {
+        if (!valueClass.isSubclassOf(topClass)) {
+            throw ConfigException(
+                """
+                    
+                Failed to set value of this <$this> value class because of type mismatch.
+                The given value <$valueClass> is NOT a sub-type of the type of the value this class stores, <$topClass>.
+                Value classes will ONLY store values that correspond to the type given at creation.
+                """.trimIndent()
+            )
+        }
     }
 }
 
@@ -36,11 +54,19 @@ class NullableValue<T : Any?>(
     value: T?,
     val default: T?,
     override val type: Type,
-    val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
+    private val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
 ) : Value("nullable", isMutable = true, shouldDeserialize = true) {
     var value: T? = value
-        set(value) {
-            field = ValueSetter(this, field, value).apply(setter).field
+        internal set(value) {
+            field = if (value != null) {
+                validateType(
+                    (value?.let { it as Any } ?: throw ConfigException())::class,
+                    (TypeToken.of(type).rawType as Class<*>).kotlin
+                )
+                ValueSetter(this, field, value).apply(setter).field
+            } else {
+                ValueSetter(this, field, value).apply(setter).field
+            }
         }
 
     override fun resetValue() {
@@ -50,14 +76,15 @@ class NullableValue<T : Any?>(
     override fun toString(): String = "NullableValue(value=$value, default=$default, type=$type)"
 }
 
-class NormalValue<T>(
+class NormalValue<T : Any>(
     value: T,
     val default: T,
     override val type: Type,
-    val setter: ValueSetter<NormalValue<T>, T>.() -> Unit
+    private val setter: ValueSetter<NormalValue<T>, T>.() -> Unit
 ) : Value("normal", isMutable = true, shouldDeserialize = true) {
     var value: T = value
-        set(value) {
+        internal set(value) {
+            validateType(value::class, field::class)
             field = ValueSetter(this, field, value).apply(setter).field
         }
 
@@ -68,17 +95,18 @@ class NormalValue<T>(
     override fun toString(): String = "NormalValue(value=$value, default=$default, type=$type)"
 }
 
-class LimitedValue<T : Comparable<T>>(
+class LimitedValue<T>(
     value: T,
     val default: T,
     val range: ClosedRange<T>,
     override val type: Type,
-    val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
-) : Value("limited", isMutable = true, shouldDeserialize = true) {
+    private val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
+) : Value("limited", isMutable = true, shouldDeserialize = true) where T : Any, T : Comparable<T> {
     var value: T = value
         @Throws(ValueOutsideOfRangeException::class)
-        set(value) {
-            if (value !in range) throw ValueOutsideOfRangeException(this, "<$value> is not in range <$range>")
+        internal set(value) {
+            validateType(value::class, field::class)
+            if (value !in range) throw ValueOutsideOfRangeException(this, "<$value> is outside of the set range <$range>")
             field = ValueSetter(this, field, value).apply(setter).field
         }
 
@@ -94,11 +122,12 @@ class LimitedStringValue(
     val default: String,
     val range: IntRange,
     override val type: Type,
-    val setter: ValueSetter<LimitedStringValue, String>.() -> Unit
+    private val setter: ValueSetter<LimitedStringValue, String>.() -> Unit
 ) : Value("limited", isMutable = true, shouldDeserialize = true) {
     var value: String = value
         @Throws(ValueOutsideOfRangeException::class)
-        set(value) {
+        internal set(value) {
+            validateType(value::class, field::class)
             if (value.length !in range) throw ValueOutsideOfRangeException(this, "<$value> is not in range <$range>")
             field = ValueSetter(this, field, value).apply(setter).field
         }
@@ -110,12 +139,12 @@ class LimitedStringValue(
     override fun toString(): String = "LimitedStringValue(value='$value', default='$default', range=$range, type=$type)"
 }
 
-data class ConstantValue<T>(
+data class ConstantValue<T : Any>(
     val value: T,
     override val type: Type
 ) : Value("constant", isMutable = false, shouldDeserialize = true)
 
-class LazyValue<T>(
+class LazyValue<T : Any>(
     initializer: () -> T,
     override val type: Type
 ) : Value("lazy", isMutable = false, shouldDeserialize = false) {
@@ -142,7 +171,7 @@ class LazyValue<T>(
         "LazyValue(value=${if (isInitialized) value.toString() else "Not initialized"}, type=$type)"
 }
 
-class DynamicValue<T>(
+class DynamicValue<T : Any>(
     private val closure: () -> T,
     override val type: Type
 ) : Value("dynamic", isMutable = false, shouldDeserialize = false) {

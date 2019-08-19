@@ -38,8 +38,13 @@ import moe.kanon.konfig.entries.values.LimitedValue
 import moe.kanon.konfig.entries.values.NormalValue
 import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.internal.ConfigResult
+import moe.kanon.konfig.internal.TypeToken
+import moe.kanon.konfig.internal.clz
 import moe.kanon.konfig.internal.failure
 import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.full.isSuperclassOf
 
 /**
  * An abstract implementation of a [ConfigLayer].
@@ -77,7 +82,7 @@ abstract class AbstractConfigLayer : ConfigLayer {
         }
 
     // -- VALUES -- \\
-    final override fun <T> setValue(path: String, value: T?): AbstractConfigLayer = apply {
+    final override fun <T : Any?> setValue(path: String, value: T?): AbstractConfigLayer = apply {
         val sanitizedPath = path.sanitizePath()
         val entry = getEntry<T>(sanitizedPath)
         val entryValue = entry.value
@@ -87,7 +92,7 @@ abstract class AbstractConfigLayer : ConfigLayer {
         requireThat(value != null) { "'path' <$path> points towards a non-nullable entry, but 'value' was null" }
 
         when (entryValue) {
-            is NormalValue<*> -> (entryValue as NormalValue<T>).value = value
+            is NormalValue<*> -> (entryValue as NormalValue<Any>).value = value
             is LimitedValue<*> -> {
                 requireThat(value is Comparable<*>) {
                     "'path' <$path> points towards a limited-entry, but 'value' is not comparable"

@@ -101,6 +101,10 @@ abstract class TypeParameter<T> protected constructor() : TypeCapture<T>() {
 
 @Suppress("UNCHECKED_CAST")
 abstract class TypeToken<T> : TypeCapture<T>, Serializable {
+    companion object {
+        fun of(type: Type): TypeToken<*> = object : TypeToken<Any>(type) {}
+    }
+
     protected val runtimeType: Type
 
     /**

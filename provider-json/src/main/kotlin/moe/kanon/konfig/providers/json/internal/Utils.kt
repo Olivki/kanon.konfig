@@ -19,6 +19,19 @@ package moe.kanon.konfig.providers.json.internal
 import java.lang.reflect.Type
 
 /**
+ * Registers all the custom deserializers and serializers services.
+ */
+/*fun ObjectMapper.registerServices() {
+    val module = SimpleModule("kanon.konfig")
+    for (serializer in loadServices<JsonSerializer<*>>()) module.addSerializer(serializer)
+    for (deserializer in loadServices<JsonDeserializer<Any>>()) {
+        module.addDeserializer(deserializer.handledType() as Class<Any>, deserializer)
+    }
+
+    this.registerModule(module)
+}*/
+
+/**
  * Converts the Java definitions of generic variance to the kotlin ones.
  *
  * `"? extends ..."` -> `"out ..."`
@@ -27,6 +40,22 @@ import java.lang.reflect.Type
  *
  * @receiver the [Type] instance to convert the [typeName][Type.getTypeName] of
  */
-// not sure if there's a way to just convert a 'Type' into a 'KType', because I'm pretty sure the output would be
-// properly converted automatically then.
-internal val Type.kotlinTypeName: String get() = this.typeName.replace("? extends", "out").replace("? super", "in")
+// this will be used until 'KType' can be properly converted into a java 'Type' instance, because then we will simply
+// use the 'toString' of the KType, or the 'toString' of the Type.
+internal val Type.kotlinTypeName: String
+    get() = this.typeName
+        .replace("? extends", "out")
+        .replace("? super", "in")
+        .replace("java.lang.Character", "kotlin.Char")
+        .replace("java.lang.String", "kotlin.String")
+        .replace("java.lang.Boolean", "kotlin.Boolean")
+        .replace("java.lang.Byte", "kotlin.Byte")
+        .replace("java.lang.Short", "kotlin.Short")
+        .replace("java.lang.Integer", "kotlin.Int")
+        .replace("java.lang.Long", "kotlin.Long")
+        .replace("java.lang.Float", "kotlin.Float")
+        .replace("java.lang.Double", "kotlin.Double")
+        .replace("java.util.Collection", "kotlin.Collection")
+        .replace("java.util.List", "kotlin.List")
+        .replace("java.util.Set", "kotlin.Set")
+        .replace("java.util.Map", "kotlin.Map")

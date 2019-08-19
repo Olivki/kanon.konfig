@@ -18,6 +18,7 @@ package moe.kanon.konfig.providers.xml
 
 import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.io.xml.JDom2Driver
+import moe.kanon.kommons.io.paths.name
 import moe.kanon.kommons.io.paths.newInputStream
 import moe.kanon.kommons.io.paths.newOutputStream
 import moe.kanon.kommons.io.paths.notExists
@@ -36,8 +37,8 @@ import moe.kanon.konfig.entries.values.NormalValue
 import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.entries.values.Value
 import moe.kanon.konfig.layers.ConfigLayer
-import moe.kanon.konfig.providers.xml.converters.XmlConverter
 import moe.kanon.konfig.providers.ConfigProvider
+import moe.kanon.konfig.providers.xml.converters.XmlConverter
 import org.jdom2.Document
 import org.jdom2.Element
 import org.jdom2.JDOMException
@@ -109,6 +110,7 @@ class XmlProvider(val settings: XmlProviderSettings = XmlProviderSettings.defaul
 
     override fun populateConfigFrom(file: Path) {
         if (file.notExists) {
+            Config.logger.debug { "File <../${file.name}> for config '${config.name}' does not exist, creating a default one.." }
             saveConfigTo(file)
             return
         }
@@ -133,8 +135,19 @@ class XmlProvider(val settings: XmlProviderSettings = XmlProviderSettings.defaul
         currentLayer: ConfigLayer,
         info: String,
         cause: Throwable? = null
-    ): Nothing =
-        throw ConfigException("Element <$element> in layer <${currentLayer.path}> is faulty in file <$file>; $info")
+    ): Nothing = throw ConfigException(
+        """
+        Error encountered when parsing a config file for config <${config.name}>
+        -----------DETAILS------------
+        File = $file
+        Element = $element
+        Current Layer = "${currentLayer.path}"
+        Info = "$info"
+        Cause = "${cause?.message ?: "No cause"}"
+        -----------------------------
+        """.trimIndent(),
+        cause
+    )
 
     private fun populateEntries(element: Element, file: Path, currentLayer: ConfigLayer) {
         val name = element.getAttributeValue("name") ?: fail(file, element, currentLayer, "missing 'name' attribute")

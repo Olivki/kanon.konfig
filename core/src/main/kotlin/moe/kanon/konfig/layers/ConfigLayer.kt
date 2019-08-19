@@ -105,7 +105,7 @@ interface ConfigLayer : Iterable<Entry<*>> {
      * - If the found [Entry] is of a type that does not support `set` operations *([constant][ConstantValue],
      * [lazy][LazyValue] or [dynamic][DynamicValue])*
      */
-    fun <T> setValue(path: String, value: T?): ConfigLayer
+    fun <T : Any?> setValue(path: String, value: T?): ConfigLayer
 
     /**
      * Returns the raw `value` of the [entry][Entry] stored under the given [path], or it throws a

@@ -79,7 +79,7 @@ data class NullableEntry<T : Any?>(
     override val value: NullableValue<T>
 ) : Entry<T>()
 
-data class NormalEntry<T>(
+data class NormalEntry<T : Any>(
     override val name: String,
     override val description: String,
     override val type: Type,
@@ -100,21 +100,21 @@ data class LimitedStringEntry(
     override val value: LimitedStringValue
 ) : Entry<String>()
 
-data class ConstantEntry<T>(
+data class ConstantEntry<T : Any>(
     override val name: String,
     override val description: String,
     override val type: Type,
     override val value: ConstantValue<T>
 ) : Entry<T>()
 
-data class LazyEntry<T>(
+data class LazyEntry<T : Any>(
     override val name: String,
     override val description: String,
     override val type: Type,
     override val value: LazyValue<T>
 ) : Entry<T>()
 
-data class DynamicEntry<T>(
+data class DynamicEntry<T : Any>(
     override val name: String,
     override val description: String,
     override val type: Type,
