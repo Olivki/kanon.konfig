@@ -28,7 +28,7 @@ apply(plugin = "name.remal.maven-publish-bintray")
 project.group = "moe.kanon.konfig"
 project.description = "A type-safe configuration system for Kotlin."
 project.version = "2.0.0"
-val gitUrl = "https://gitlab.com/kanondev/kanon-konfig"
+val gitUrl = "https://gitlab.com/Olivki/kanon-konfig"
 
 repositories {
     jcenter()
@@ -77,7 +77,7 @@ subprojects {
 
         publishing.repositories.convention[RepositoryHandlerBintrayExtension::class.java].bintray {
             owner = "olivki"
-            repositoryName = "kanon.konfig"
+            repositoryName = "konfig"
             packageName = this@subprojects.extra["packageName"]!!.toString()
         }
     }

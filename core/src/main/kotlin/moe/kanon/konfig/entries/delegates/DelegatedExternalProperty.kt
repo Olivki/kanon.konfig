@@ -20,10 +20,10 @@ import moe.kanon.konfig.layers.ConfigLayer
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class DelegatedExternalProperty<T : Any>(val path: String) : ReadWriteProperty<ConfigLayer, T> {
-    override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): T = thisRef.getValue(path)
+class DelegatedExternalProperty<T : Any>(val layer: ConfigLayer, val path: String) : ReadWriteProperty<Any?, T> {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): T = layer.getValue(path)
 
-    override fun setValue(thisRef: ConfigLayer, property: KProperty<*>, value: T) {
-        thisRef.setValue(path, value)
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        layer.setValue(path, value)
     }
 }

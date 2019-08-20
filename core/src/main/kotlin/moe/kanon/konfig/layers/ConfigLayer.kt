@@ -559,7 +559,7 @@ interface ConfigLayer : Iterable<Entry<*>> {
      *  val prop: String by config.delegateTo("entry/name")
      * ```
      */
-    fun <T : Any> delegateTo(path: String): ReadWriteProperty<ConfigLayer, T>
+    fun <T : Any> delegateTo(path: String): ReadWriteProperty<Any?, T>
 
     /**
      * Delegates a property to the nullable entry stored under the given [path].
@@ -570,7 +570,7 @@ interface ConfigLayer : Iterable<Entry<*>> {
      *  val prop: String by config.delegateToNullable("entry/name")
      * ```
      */
-    fun <T : Any?> delegateToNullable(path: String): ReadWriteProperty<ConfigLayer, T?>
+    fun <T : Any?> delegateToNullable(path: String): ReadWriteProperty<Any?, T?>
 
     /**
      * Returns an `iterator` that iterates over the [entries] contained in this layer.

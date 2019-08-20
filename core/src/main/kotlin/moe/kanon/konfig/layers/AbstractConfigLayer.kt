@@ -290,11 +290,11 @@ abstract class AbstractConfigLayer : ConfigLayer {
     }
 
     // -- DELEGATES -- \\
-    final override fun <T : Any> delegateTo(path: String): ReadWriteProperty<ConfigLayer, T> =
-        DelegatedExternalProperty(path)
+    final override fun <T : Any> delegateTo(path: String): ReadWriteProperty<Any?, T> =
+        DelegatedExternalProperty(this, path)
 
-    final override fun <T : Any?> delegateToNullable(path: String): ReadWriteProperty<ConfigLayer, T?> =
-        DelegatedExternalNullableProperty(path)
+    final override fun <T : Any?> delegateToNullable(path: String): ReadWriteProperty<Any?, T?> =
+        DelegatedExternalNullableProperty(this, path)
 
     // -- MISC -- \\
     protected fun String.sanitizePath(): String {

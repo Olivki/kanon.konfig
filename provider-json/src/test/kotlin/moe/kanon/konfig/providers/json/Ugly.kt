@@ -20,10 +20,11 @@ import kotlinx.collections.immutable.persistentListOf
 import moe.kanon.kommons.io.paths.pathOf
 import moe.kanon.kommons.writeOut
 import moe.kanon.konfig.Config
+import moe.kanon.konfig.ConfigSettings
+import moe.kanon.konfig.FaultyParsedValueAction
 import moe.kanon.konfig.dsl.buildConfig
 import moe.kanon.konfig.layers.ObjectLayer
 import java.time.LocalDateTime
-import javax.security.auth.login.ConfigurationSpi
 
 fun main() {
     val dir = pathOf("H:", "Programming", "JVM", "Kotlin", "Data", "kanon.konfig", "json")
@@ -32,6 +33,7 @@ fun main() {
     val dslConfig = buildConfig("cars", dslFile) {
         normalValue("epic string entry", description = "It's a string", default = "stevie wonder")
         normalValue("string entry", "it's a love story", "love", "stevie wonder")
+        normalValue("faulty entry", "dab", 42, 1337)
         limitedStringValue("limited string test", "tiger baby", default = "tiger", range = 1..3)
         nullableValue("enum entry", "I love cheese", TestEnum.ENUM_CONSTANT_ONE)
         layer("childLayer") {
@@ -46,10 +48,17 @@ fun main() {
 
     writeOut()
 
+    writeOut(dslConfig["faulty entry"])
+    dslConfig["faulty entry"] = 69
+    writeOut(dslConfig["faulty entry"])
+
+    dslConfig.saveToFile()
+
     val objectFile = dir.resolve("test1.json")
     val objectConfig = Config("things", objectFile, LayerOne)
-
     objectConfig.loadFromFile()
+
+    writeOut(objectConfig["layerOne_Child/limitedLongEntry"])
 }
 
 object CarsLayer : ObjectLayer("cars") {

@@ -1,6 +1,6 @@
 ## kanon.konfig
 
-Currently being completely rewritten..
+TODO: Documentation and how to use..
 
 ## Installation
 
