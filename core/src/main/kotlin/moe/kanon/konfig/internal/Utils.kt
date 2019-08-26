@@ -16,5 +16,10 @@
 
 package moe.kanon.konfig.internal
 
+import java.lang.reflect.Type
+
 @PublishedApi
 internal val <T : Any> T.clz get() = this::class
+
+val Type.fixedName: String
+    get() = if (typeName.startsWith("class ")) typeName.substringAfter("class ") else typeName

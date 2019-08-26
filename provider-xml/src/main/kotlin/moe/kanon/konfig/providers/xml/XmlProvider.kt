@@ -17,12 +17,13 @@
 package moe.kanon.konfig.providers.xml
 
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.XStreamException
 import com.thoughtworks.xstream.io.xml.JDom2Driver
 import moe.kanon.kommons.io.paths.name
 import moe.kanon.kommons.io.paths.newInputStream
 import moe.kanon.kommons.io.paths.newOutputStream
 import moe.kanon.kommons.io.paths.notExists
-import moe.kanon.kommons.reflection.loadServices
+import moe.kanon.kommons.writeOut
 import moe.kanon.konfig.Config
 import moe.kanon.konfig.ConfigException
 import moe.kanon.konfig.FaultyParsedValueAction
@@ -36,9 +37,9 @@ import moe.kanon.konfig.entries.values.LimitedValue
 import moe.kanon.konfig.entries.values.NormalValue
 import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.entries.values.Value
+import moe.kanon.konfig.internal.fixedName
 import moe.kanon.konfig.layers.ConfigLayer
 import moe.kanon.konfig.providers.ConfigProvider
-import moe.kanon.konfig.providers.xml.converters.XmlConverter
 import moe.kanon.konfig.providers.xml.converters.registerInstalledConverters
 import org.jdom2.Document
 import org.jdom2.Element
@@ -53,9 +54,8 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import java.nio.file.StandardOpenOption.WRITE
-import kotlin.reflect.full.primaryConstructor
 
-class XmlProvider(
+class XmlProvider @JvmOverloads constructor(
     override val classLoader: ClassLoader = ClassLoader.getSystemClassLoader(),
     val settings: XmlProviderSettings = XmlProviderSettings.default
 ) : ConfigProvider("json") {
@@ -69,37 +69,42 @@ class XmlProvider(
             autodetectAnnotations(true)
             Value::class.java.also {
                 alias("container", it)
-                useAttributeFor(it, "name")
-                aliasField("type", it, "name")
+                omitField(it, "valueType")
                 omitField(it, "isMutable")
                 omitField(it, "shouldDeserialize")
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
             NullableValue::class.java.also {
                 alias("container", it)
                 omitField(it, "setter")
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
             NormalValue::class.java.also {
                 alias("container", it)
                 omitField(it, "setter")
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
             LimitedValue::class.java.also {
                 alias("container", it)
                 omitField(it, "range")
                 omitField(it, "setter")
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
             LimitedStringValue::class.java.also {
                 alias("container", it)
                 omitField(it, "range")
                 omitField(it, "setter")
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
             ConstantValue::class.java.also {
                 alias("container", it)
-                omitField(it, "type")
+                omitField(it, "kotlinType")
+                omitField(it, "javaType")
             }
         }
         // load converters
@@ -170,9 +175,21 @@ class XmlProvider(
                 return
             }
             val valueString = writer.outputString(container.getChild("value"))
-            val parsedValue: Any? = serializer.fromXML(valueString)
+            val (shouldSetValue, parsedValue: Any?) = try {
+                true to serializer.fromXML(valueString)
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> {
+                        fail(file, element, currentLayer, "value in element could not be deserialized", e)
+                    }
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        Config.logger.error { "Resetting value of entry <$entryPath> as the value in element <$element> could not be deserialized; ${e.message}" }
+                        false to entry.value.resetValue()
+                    }
+                }
+            }
 
-            setValue(name, parsedValue, currentValue, entryPath, currentLayer, file, element, entry)
+            if (shouldSetValue) setValue(name, parsedValue, currentValue, entryPath, currentLayer, file, element, entry)
         } ?: fail(file, element, currentLayer, "missing 'container' element")
     }
 
@@ -219,7 +236,11 @@ class XmlProvider(
             if (isRootAttribute) root.setAttribute("name", config.name)
 
             for ((key, entry) in config.entries.asSequence().filter { it.value.value.shouldDeserialize }) {
-                root.addContent(createEntryElement(key, entry))
+                try {
+                    root.addContent(createEntryElement(key, entry))
+                } catch (e: Exception) {
+                    throw ConfigException("Error when creating element for entry <$entry> in config layer", e)
+                }
             }
 
             config.layers
@@ -229,14 +250,18 @@ class XmlProvider(
                 .forEach { root.addContent(it) }
         }
 
-        file.newOutputStream(WRITE, CREATE, TRUNCATE_EXISTING).use { writer.output(doc, it) }
+        file.newOutputStream().use { writer.output(doc, it) }
     }
 
     private fun createLayerElement(parent: ConfigLayer): Element = Element("layer").also { root ->
         root.setAttribute("name", parent.name)
 
         for ((key, entry) in parent.entries.asSequence().filter { it.value.value.shouldDeserialize }) {
-            root.addContent(createEntryElement(key, entry))
+            try {
+                root.addContent(createEntryElement(key, entry))
+            } catch (e: Exception) {
+                throw ConfigException("Error when creating element for entry <$entry> in layer <$parent>", e)
+            }
         }
 
         parent.layers
@@ -248,6 +273,7 @@ class XmlProvider(
 
     private fun createEntryElement(key: String, entry: Entry<*>): Element = Element("entry").also { root ->
         root.setAttribute("name", key)
+        root.setAttribute("valueType", entry.value.valueType)
 
         root.addContent(Element("description").setText(entry.description))
 
@@ -265,6 +291,13 @@ class XmlProvider(
 
         if (!(config.settings.shouldPrintDefaultValue) && valueElement.children.any { it.name == "default" }) {
             valueElement.removeChild("default")
+        }
+
+        when (settings.genericPrintingStyle) {
+            XmlGenericPrintingStyle.JAVA -> valueElement.setAttribute("type", entry.javaType.fixedName)
+            XmlGenericPrintingStyle.KOTLIN -> valueElement.setAttribute("type", entry.kotlinType.toString())
+            XmlGenericPrintingStyle.DISABLED -> {
+            } // just don't do anything.
         }
 
         root.addContent(valueElement)

@@ -20,12 +20,19 @@ package moe.kanon.konfig.providers.xml
 
 import moe.kanon.konfig.Config
 import moe.kanon.konfig.ConfigSettings
+import moe.kanon.konfig.entries.Entry
 
 data class XmlProviderSettings private constructor(
     /**
      * Determines how the [Config.name] property should be printed in the configuration file.
      */
-    val rootNamePlacement: RootNamePlacement
+    val rootNamePlacement: RootNamePlacement,
+    /**
+     * The style that the system should use for printing output of generics.
+     *
+     * This is mainly used for the output of the [Entry.javaType] property in the configuration file.
+     */
+    val genericPrintingStyle: XmlGenericPrintingStyle
 ) {
     companion object {
         /**
@@ -40,10 +47,11 @@ data class XmlProviderSettings private constructor(
     }
 
     data class Builder internal constructor(
-        var rootNamePlacement: RootNamePlacement = RootNamePlacement.IN_TAG
+        var rootNamePlacement: RootNamePlacement = RootNamePlacement.IN_TAG,
+        var genericPrintingStyle: XmlGenericPrintingStyle = XmlGenericPrintingStyle.DISABLED
     ) {
         fun build(): XmlProviderSettings =
-            XmlProviderSettings(rootNamePlacement)
+            XmlProviderSettings(rootNamePlacement, genericPrintingStyle)
     }
 }
 
@@ -60,4 +68,27 @@ enum class RootNamePlacement {
      * A [Config] with the name of `"module"` will have a root element that looks like `"<root name="module">...</root>"`
      */
     IN_ATTRIBUTE
+}
+
+enum class XmlGenericPrintingStyle {
+    /**
+     * The system will print any output of generics according to how variants and primitives look in Java.
+     *
+     * That means that an entry like `Map<String, Int>` will be output as
+     * `"java.util.Map<java.lang.String, ? extends java.lang.Integer>"`.
+     */
+    JAVA,
+    /**
+     * The system will print any output of generics according to how variants and primitives look in Kotlin.
+     *
+     * That means that an entry like `Map<String, Int>` will be output as
+     * `"java.util.Map<java.lang.String, out java.lang.Integer>"`.
+     */
+    KOTLIN,
+    /**
+     * The system will not print any output of generics.
+     *
+     * This disables the printing of the `"class"` output in the configuration file.
+     */
+    DISABLED
 }

@@ -26,7 +26,7 @@ data class JsonProviderSettings private constructor(
      *
      * This is mainly used for the output of the [Entry.javaType] property in the configuration file.
      */
-    val genericPrintingStyle: GenericPrintingStyle
+    val genericPrintingStyle: JsonGenericPrintingStyle
 ) {
     companion object {
         /**
@@ -41,14 +41,14 @@ data class JsonProviderSettings private constructor(
     }
 
     data class Builder internal constructor(
-        var genericPrintingStyle: GenericPrintingStyle = GenericPrintingStyle.KOTLIN
+        var genericPrintingStyle: JsonGenericPrintingStyle = JsonGenericPrintingStyle.KOTLIN
     ) {
         fun build(): JsonProviderSettings =
             JsonProviderSettings(genericPrintingStyle)
     }
 }
 
-enum class GenericPrintingStyle {
+enum class JsonGenericPrintingStyle {
     /**
      * The system will print any output of generics according to how variants and primitives look in Java.
      *

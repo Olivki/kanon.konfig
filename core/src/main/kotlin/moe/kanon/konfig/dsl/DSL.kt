@@ -52,7 +52,6 @@ annotation class ConfigDsl
  * @property [parent] The parent of `this` container, if it has one.
  * @property [layer] The underlying [config-layer][AbstractConfigLayer] of `this` container.
  */
-@ExperimentalStdlibApi
 @ConfigDsl
 class LayerContainer(
     val name: String,
@@ -94,6 +93,7 @@ class LayerContainer(
     // and as such, it will be hidden from it. (In truth, most of this library isn't very usable from the Java side,
     // and even if some parts are, it's far from being idiomatic.)
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Any> nullableValue(
         name: String,
         description: String,
@@ -107,6 +107,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Any> normalValue(
         name: String,
         description: String,
@@ -120,6 +121,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Comparable<T>> limitedValue(
         name: String,
         description: String,
@@ -134,6 +136,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic fun limitedStringValue(
         name: String,
         description: String,
@@ -146,6 +149,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Any> constantValue(name: String, description: String, value: T) {
         val kotlinType = typeOf<T>()
         val javaType = typeTokenOf<T>().type
@@ -153,6 +157,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Any> lazyValue(name: String, description: String, noinline value: (() -> T)) {
         val kotlinType = typeOf<T>()
         val javaType = typeTokenOf<T>().type
@@ -160,6 +165,7 @@ class LayerContainer(
     }
 
     @ConfigDsl
+    @UseExperimental(ExperimentalStdlibApi::class)
     @JvmSynthetic inline fun <reified T : Any> dynamicValue(
         name: String,
         description: String,

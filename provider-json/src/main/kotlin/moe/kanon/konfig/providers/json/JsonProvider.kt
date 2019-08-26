@@ -33,17 +33,14 @@ import moe.kanon.konfig.UnknownEntryBehaviour
 import moe.kanon.konfig.entries.Entry
 import moe.kanon.konfig.entries.LimitedEntry
 import moe.kanon.konfig.entries.LimitedStringEntry
+import moe.kanon.konfig.internal.fixedName
 import moe.kanon.konfig.layers.ConfigLayer
 import moe.kanon.konfig.providers.ConfigProvider
 import moe.kanon.konfig.providers.json.converters.registerInstalledConverters
 import moe.kanon.konfig.providers.json.internal.json
-import moe.kanon.konfig.providers.json.internal.kotlinTypeName
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption.CREATE
-import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import java.nio.file.StandardOpenOption.WRITE
 
-class JsonProvider(
+class JsonProvider @JvmOverloads constructor(
     override val classLoader: ClassLoader = ClassLoader.getSystemClassLoader(),
     val settings: JsonProviderSettings = JsonProviderSettings.default
 ) : ConfigProvider("json") {
@@ -104,10 +101,22 @@ class JsonProvider(
 
                 val currentNode = node.asJsonObject
                 val entry = config.getEntry<Any?>(key)
-                val container: JsonElement = currentNode["container"].asJsonObject["value"]
-                val result: Any? = gson.fromJson(container, entry.javaType)
-                val currentValue = config.getNullableValue<Any?>(key)
                 val entryPath = "${config.path}${entry.name}"
+                val container: JsonElement = currentNode["container"].asJsonObject["value"]
+                val (shouldSetValue, result: Any?) = try {
+                    true to gson.fromJson<Any?>(container, entry.javaType)
+                } catch (e: Exception) {
+                    when (config.settings.faultyParsedValueAction) {
+                        FaultyParsedValueAction.THROW_EXCEPTION -> {
+                            parseFail(node, file, "value in node could not be deserialized", e)
+                        }
+                        FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                            Config.logger.error { "Resetting value of entry <$entryPath> as the value in node <$node> could not be deserialized; ${e.message}" }
+                            false to entry.value.resetValue()
+                        }
+                    }
+                }
+                val currentValue = config.getNullableValue<Any?>(key)
 
                 if (!entry.value.isMutable) continue@loop
 
@@ -115,7 +124,7 @@ class JsonProvider(
                     Config.logger.error { "Node <$node> in file <$file> references an entry that should not be serialized" }
                 }
 
-                setValue(key, result, currentValue, entryPath, config, file, node, entry)
+                if (shouldSetValue) setValue(key, result, currentValue, entryPath, config, file, node, entry)
             }
 
             if (obj.has("layers")) traverseLayers(obj["layers"], file, config)
@@ -136,10 +145,22 @@ class JsonProvider(
 
             val currentNode = node.asJsonObject
             val entry = currentLayer.getEntry<Any?>(key)
-            val container = currentNode["container"].asJsonObject["value"]
-            val result: Any? = gson.fromJson(container, entry.javaType)
-            val currentValue = currentLayer.getNullableValue<Any?>(key)
             val entryPath = "${currentLayer.path}${entry.name}"
+            val container = currentNode["container"].asJsonObject["value"]
+            val (shouldSetValue, result: Any?) = try {
+                true to gson.fromJson<Any?>(container, entry.javaType)
+            } catch (e: Exception) {
+                when (config.settings.faultyParsedValueAction) {
+                    FaultyParsedValueAction.THROW_EXCEPTION -> {
+                        parseFail(node, file, "value in node could not be deserialized", e)
+                    }
+                    FaultyParsedValueAction.FALLBACK_TO_DEFAULT -> {
+                        Config.logger.error { "Resetting value of entry <$entryPath> as the value in node <$node> could not be deserialized; ${e.message}" }
+                        false to entry.value.resetValue()
+                    }
+                }
+            }
+            val currentValue = currentLayer.getNullableValue<Any?>(key)
 
             if (!entry.value.isMutable) continue@loop
 
@@ -147,7 +168,7 @@ class JsonProvider(
                 Config.logger.error { "Node <$node> in file <$file> references an entry that should not be serialized" }
             }
 
-            setValue(key, result, currentValue, entryPath, currentLayer, file, node, entry)
+            if (shouldSetValue) setValue(key, result, currentValue, entryPath, currentLayer, file, node, entry)
         }
     }
 
@@ -210,7 +231,7 @@ class JsonProvider(
             if (config.layers.isNotEmpty()) "layers" to createLayerNode(config)
         }
 
-        file.newBufferedWriter(CREATE, WRITE, TRUNCATE_EXISTING).use { gson.toJson(obj, it) }
+        file.newBufferedWriter().use { gson.toJson(obj, it) }
     }
 
     private fun createEntryNode(parent: ConfigLayer, entry: Entry<*>, key: String): JsonObject = json {
@@ -218,12 +239,12 @@ class JsonProvider(
         "description" to entry.description
         "container" {
             when (settings.genericPrintingStyle) {
-                GenericPrintingStyle.JAVA -> "class" to entry.javaType.typeName
-                GenericPrintingStyle.KOTLIN -> "class" to entry.javaType.kotlinTypeName
-                GenericPrintingStyle.DISABLED -> {
+                JsonGenericPrintingStyle.JAVA -> "type" to entry.javaType.fixedName
+                JsonGenericPrintingStyle.KOTLIN -> "type" to entry.kotlinType.toString()
+                JsonGenericPrintingStyle.DISABLED -> {
                 } // just don't do anything.
             }
-            "type" to entry.value.valueType
+            "valueType" to entry.value.valueType
             when (entry) {
                 is LimitedEntry<*> -> "range" to entry.value.range.toString()
                 is LimitedStringEntry -> "range" to entry.value.range.toString()
