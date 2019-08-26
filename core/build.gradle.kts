@@ -14,7 +14,7 @@ repositories {
 dependencies {
     compile(group = "moe.kanon.kommons", name = "kommons.func", version = "1.3.0")
     compile(group = "moe.kanon.kommons", name = "kommons.reflection", version = "0.4.0")
-    compile(group = "moe.kanon.kommons", name = "kommons.io", version = "1.0.1")
+    compile(group = "moe.kanon.kommons", name = "kommons.io", version = "1.1.0")
     compile(group = "moe.kanon.kommons", name = "kommons.lang", version = "0.1.0")
     compile(group = "moe.kanon.kommons", name = "kommons.collections", version = "0.2.0")
 
