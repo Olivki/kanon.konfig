@@ -88,7 +88,7 @@ abstract class XmlConverter<T> : Converter {
 
     // DSL
     // read
-    protected inline fun HierarchicalStreamReader.use(scope: HierarchicalStreamReader.() -> Any): Any =
+    protected inline fun <T> HierarchicalStreamReader.use(scope: HierarchicalStreamReader.() -> T): T =
         with(this, scope)
 
     protected inline fun HierarchicalStreamReader.forAll(action: () -> Unit) {
