@@ -58,7 +58,7 @@ import java.nio.file.StandardOpenOption.WRITE
 class XmlProvider @JvmOverloads constructor(
     override val classLoader: ClassLoader = ClassLoader.getSystemClassLoader(),
     val settings: XmlProviderSettings = XmlProviderSettings.default
-) : ConfigProvider("json") {
+) : ConfigProvider("xml") {
     private val builder = SAXBuilder(XMLReaders.NONVALIDATING)
     private val writer = XMLOutputter(Format.getPrettyFormat())
     val serializer = XStream(JDom2Driver())
