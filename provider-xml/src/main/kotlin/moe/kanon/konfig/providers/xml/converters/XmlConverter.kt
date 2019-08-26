@@ -148,6 +148,17 @@ abstract class XmlConverter<T> : Converter {
         this.endNode()
     }
 
+    protected inline fun <T> HierarchicalStreamWriter.writeNodes(
+        parentName: String,
+        childName: String,
+        elements: Iterable<T>,
+        value: (T) -> Any
+    ) {
+        writeNode(parentName) {
+            for (element in elements) writeNode(childName, value(element))
+        }
+    }
+
     protected inline fun HierarchicalStreamWriter.writeNode(name: String, body: Any) {
         this.startNode(name)
         this.setValue(body.toString())
