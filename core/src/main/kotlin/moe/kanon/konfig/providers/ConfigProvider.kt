@@ -16,8 +16,8 @@
 
 package moe.kanon.konfig.providers
 
-import moe.kanon.kommons.affirmThat
-import moe.kanon.kommons.requireThat
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.PersistentSet
 import moe.kanon.konfig.Config
 import java.nio.file.Path
 
@@ -25,13 +25,16 @@ import java.nio.file.Path
  * An implementation of this class handles the saving and loading of a [Config] instance to a specific file format
  * *(e.g; XML, JSON, etc..)*.
  *
- * @property [mediaTypes] the media-types that this class can work on, generally used in conjunction with an
- * implementation of [ConfigProvider.Finder] to automatically fetch the appropriate provider for an unknown file.
+ * @property [fileExtension] The most commonly used file-extension used to represent the file format `this` provider
+ * handles.
  */
-abstract class ConfigProvider(vararg val mediaTypes: String) {
-    init {
-        requireThat(mediaTypes.isNotEmpty()) { "'mediaTypes' is empty" }
-    }
+abstract class ConfigProvider(val fileExtension: String) {
+    /**
+     * The `class-loader` used to load any services related to `this` provider.
+     *
+     * Whether a provider actually loads any services or not is implementation specific.
+     */
+    abstract val classLoader: ClassLoader
 
     /**
      * The [Config] instance that this provider is tied to.
@@ -65,8 +68,16 @@ abstract class ConfigProvider(vararg val mediaTypes: String) {
      */
     interface Finder {
         /**
+         * A set containing all the media-types that the [ConfigProvider] can work on.
+         */
+        val mediaTypes: ImmutableSet<String>
+
+        /**
          * Returns an appropriate [ConfigProvider] based on the given [mediaType], or `null` if none can be found.
          */
-        fun getProvider(mediaType: String): ConfigProvider?
+        fun getProvider(
+            mediaType: String,
+            classLoader: ClassLoader = ClassLoader.getSystemClassLoader()
+        ): ConfigProvider?
     }
 }

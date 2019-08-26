@@ -39,6 +39,7 @@ import moe.kanon.konfig.entries.values.Value
 import moe.kanon.konfig.layers.ConfigLayer
 import moe.kanon.konfig.providers.ConfigProvider
 import moe.kanon.konfig.providers.xml.converters.XmlConverter
+import moe.kanon.konfig.providers.xml.converters.registerInstalledConverters
 import org.jdom2.Document
 import org.jdom2.Element
 import org.jdom2.JDOMException
@@ -54,8 +55,10 @@ import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import java.nio.file.StandardOpenOption.WRITE
 import kotlin.reflect.full.primaryConstructor
 
-class XmlProvider(val settings: XmlProviderSettings = XmlProviderSettings.default) :
-    ConfigProvider("application/xml", "text/xml") {
+class XmlProvider(
+    override val classLoader: ClassLoader = ClassLoader.getSystemClassLoader(),
+    val settings: XmlProviderSettings = XmlProviderSettings.default
+) : ConfigProvider("json") {
     private val builder = SAXBuilder(XMLReaders.NONVALIDATING)
     private val writer = XMLOutputter(Format.getPrettyFormat())
     val serializer = XStream(JDom2Driver())
@@ -100,12 +103,7 @@ class XmlProvider(val settings: XmlProviderSettings = XmlProviderSettings.defaul
             }
         }
         // load converters
-        val services = loadServices<XmlConverter<*>> {
-            val constructor = it.primaryConstructor
-                ?: throw ConfigException("'XmlConverter' service <$it> does not have a primary constructor")
-            constructor.call(serializer.mapper)
-        }
-        for (converter in services) serializer.registerConverter(converter)
+        serializer.registerInstalledConverters(classLoader)
     }
 
     override fun populateConfigFrom(file: Path) {

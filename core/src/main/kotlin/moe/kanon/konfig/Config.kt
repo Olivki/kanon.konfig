@@ -36,7 +36,7 @@ data class Config @JvmOverloads constructor(
     val file: Path,
     val root: AbstractConfigLayer = BasicLayer(name),
     val settings: ConfigSettings = ConfigSettings.default,
-    val provider: ConfigProvider = ConfigProviderFinder.findProvider(file).unwrap(),
+    val provider: ConfigProvider = ConfigProviderFinder.findProvider(file, Config::class.java.classLoader).unwrap(),
     val container: LayerContainer = LayerContainer(name, layer = root)
 ) : ConfigLayer by root {
     companion object {
@@ -63,14 +63,14 @@ data class Config @JvmOverloads constructor(
      *
      * This serves as a direct entry-point into the DSL for creating entries.
      */
-    @JvmSynthetic inline fun mutate(closure: LayerContainer.() -> Unit) {
+    inline fun mutate(closure: LayerContainer.() -> Unit) {
         container.apply(closure)
     }
 
     /**
      * Creates and adds a [Layer] to `this` layer from the specified [name] and [closure].
      */
-    @JvmSynthetic inline fun addLayer(name: String, closure: LayerContainer.() -> Unit) {
+    inline fun addLayer(name: String, closure: LayerContainer.() -> Unit) {
         container.layer(name, closure)
     }
 }

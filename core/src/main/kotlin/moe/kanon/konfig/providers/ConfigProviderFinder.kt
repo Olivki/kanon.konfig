@@ -30,9 +30,9 @@ import java.nio.file.Path
 internal object ConfigProviderFinder {
     val finders: ImmutableSet<ConfigProvider.Finder> by lazy { loadServices<ConfigProvider.Finder>().toImmutableSet() }
 
-    fun findProvider(file: Path): ConfigResult<ConfigProvider> {
+    fun findProvider(file: Path, classLoader: ClassLoader): ConfigResult<ConfigProvider> {
         val mediaType = file.contentType ?: return failure("Could not find a media-type for file <$file>")
-        return finders.asSequence().mapNotNull { it.getProvider(mediaType) }.firstOrNull()?.let { it.toSuccess() }
+        return finders.asSequence().mapNotNull { it.getProvider(mediaType, classLoader) }.firstOrNull()?.toSuccess()
             ?: failure("Could not find provider for file <$file> with media-type <$mediaType>")
     }
 }

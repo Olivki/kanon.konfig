@@ -34,6 +34,8 @@ fun <T : Any> GsonBuilder.registerConverter(clz: KClass<T>, converter: JsonConve
 /**
  * Registers all the [JsonConverter] instances that have been added as services.
  */
-fun GsonBuilder.registerInstalledConverters() {
-    for (converter in loadServices<JsonConverter<*>>()) registerTypeAdapter(converter.type.java, converter)
+fun GsonBuilder.registerInstalledConverters(classLoader: ClassLoader) {
+    for (converter in loadServices<JsonConverter<*>>(classLoader)) {
+        registerTypeAdapter(converter.type.java, converter)
+    }
 }

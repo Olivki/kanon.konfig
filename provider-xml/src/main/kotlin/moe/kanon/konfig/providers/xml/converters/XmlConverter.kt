@@ -37,7 +37,7 @@ abstract class XmlConverter<T> : Converter {
     }
 
     final override fun unmarshal(reader: HierarchicalStreamReader, context: UnmarshallingContext): Any =
-        readSource(reader, context)
+        readSource(reader, context) as Any
 
     final override fun canConvert(type: Class<*>): Boolean = isSupported(type.kotlin)
 
@@ -45,7 +45,7 @@ abstract class XmlConverter<T> : Converter {
 
     abstract fun writeSource(source: T, writer: HierarchicalStreamWriter, context: MarshallingContext)
 
-    abstract fun readSource(reader: HierarchicalStreamReader, context: UnmarshallingContext): Any
+    abstract fun readSource(reader: HierarchicalStreamReader, context: UnmarshallingContext): T
 
     // writeItem..
     protected fun writeCompleteItem(item: Any?, writer: HierarchicalStreamWriter, context: MarshallingContext) {

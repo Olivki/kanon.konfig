@@ -17,13 +17,14 @@
 package moe.kanon.konfig.providers.json
 
 import com.google.auto.service.AutoService
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentHashSetOf
-import moe.kanon.kommons.writeOut
 import moe.kanon.konfig.providers.ConfigProvider
 
 @AutoService(ConfigProvider.Finder::class)
 internal object JsonProviderFinder : ConfigProvider.Finder {
-    val mediaTypes = persistentHashSetOf("application/json")
+    override val mediaTypes: ImmutableSet<String> = persistentHashSetOf("application/json")
 
-    override fun getProvider(mediaType: String): ConfigProvider? = if (mediaType in mediaTypes) JsonProvider() else null
+    override fun getProvider(mediaType: String, classLoader: ClassLoader): ConfigProvider? =
+        if (mediaType in mediaTypes) JsonProvider(classLoader) else null
 }

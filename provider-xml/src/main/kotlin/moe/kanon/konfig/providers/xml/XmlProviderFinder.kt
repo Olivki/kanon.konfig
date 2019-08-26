@@ -17,13 +17,14 @@
 package moe.kanon.konfig.providers.xml
 
 import com.google.auto.service.AutoService
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentHashSetOf
-import moe.kanon.kommons.writeOut
 import moe.kanon.konfig.providers.ConfigProvider
 
 @AutoService(ConfigProvider.Finder::class)
 internal object XmlProviderFinder : ConfigProvider.Finder {
-    val mediaTypes = persistentHashSetOf("application/xml", "text/xml")
+    override val mediaTypes: ImmutableSet<String> = persistentHashSetOf("application/xml", "text/xml")
 
-    override fun getProvider(mediaType: String): ConfigProvider? = if (mediaType in mediaTypes) XmlProvider() else null
+    override fun getProvider(mediaType: String, classLoader: ClassLoader): ConfigProvider? =
+        if (mediaType in mediaTypes) XmlProvider(classLoader) else null
 }

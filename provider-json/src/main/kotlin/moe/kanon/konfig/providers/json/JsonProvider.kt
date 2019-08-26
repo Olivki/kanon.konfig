@@ -43,19 +43,20 @@ import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import java.nio.file.StandardOpenOption.WRITE
 
-class JsonProvider(val settings: JsonProviderSettings = JsonProviderSettings.default) :
-    ConfigProvider("application/json") {
-
+class JsonProvider(
+    override val classLoader: ClassLoader = ClassLoader.getSystemClassLoader(),
+    val settings: JsonProviderSettings = JsonProviderSettings.default
+) : ConfigProvider("json") {
     private val parser = JsonParser()
 
     val gson: Gson = GsonBuilder().apply {
-        setLenient() // we hocon now.
+        setLenient()
         setPrettyPrinting()
         disableHtmlEscaping()
         serializeNulls()
         setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
         enableComplexMapKeySerialization()
-        registerInstalledConverters()
+        registerInstalledConverters(classLoader)
     }.create()
 
     private fun parseFail(node: JsonElement, file: Path, info: String, cause: Throwable? = null): Nothing =
