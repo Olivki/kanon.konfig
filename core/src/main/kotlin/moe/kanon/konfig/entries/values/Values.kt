@@ -21,11 +21,13 @@ import moe.kanon.konfig.ConfigException
 import moe.kanon.konfig.internal.TypeToken
 import java.lang.reflect.Type
 import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.full.isSubclassOf
 
 data class ValueSetter<V : Value, T>(val ref: V, var field: T, val value: T)
 
 sealed class Value(val valueType: String, val isMutable: Boolean, val shouldDeserialize: Boolean) {
+    abstract val kotlinType: KType
     abstract val javaType: Type
 
     /**
@@ -52,6 +54,7 @@ sealed class Value(val valueType: String, val isMutable: Boolean, val shouldDese
 class NullableValue<T : Any?>(
     value: T?,
     val default: T?,
+    override val kotlinType: KType,
     override val javaType: Type,
     private val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
 ) : Value("nullable", isMutable = true, shouldDeserialize = true) {
@@ -78,6 +81,7 @@ class NullableValue<T : Any?>(
 class NormalValue<T : Any>(
     value: T,
     val default: T,
+    override val kotlinType: KType,
     override val javaType: Type,
     private val setter: ValueSetter<NormalValue<T>, T>.() -> Unit
 ) : Value("normal", isMutable = true, shouldDeserialize = true) {
@@ -98,6 +102,7 @@ class LimitedValue<T>(
     value: T,
     val default: T,
     val range: ClosedRange<T>,
+    override val kotlinType: KType,
     override val javaType: Type,
     private val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
 ) : Value("limited", isMutable = true, shouldDeserialize = true) where T : Any, T : Comparable<T> {
@@ -120,6 +125,7 @@ class LimitedStringValue(
     value: String,
     val default: String,
     val range: IntRange,
+    override val kotlinType: KType,
     override val javaType: Type,
     private val setter: ValueSetter<LimitedStringValue, String>.() -> Unit
 ) : Value("limited", isMutable = true, shouldDeserialize = true) {
@@ -140,11 +146,13 @@ class LimitedStringValue(
 
 data class ConstantValue<T : Any>(
     val value: T,
+    override val kotlinType: KType,
     override val javaType: Type
 ) : Value("constant", isMutable = false, shouldDeserialize = true)
 
 class LazyValue<T : Any>(
     initializer: () -> T,
+    override val kotlinType: KType,
     override val javaType: Type
 ) : Value("lazy", isMutable = false, shouldDeserialize = false) {
     @Suppress("ClassName")
@@ -172,6 +180,7 @@ class LazyValue<T : Any>(
 
 class DynamicValue<T : Any>(
     private val closure: () -> T,
+    override val kotlinType: KType,
     override val javaType: Type
 ) : Value("dynamic", isMutable = false, shouldDeserialize = false) {
     val value: T get() = closure()

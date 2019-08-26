@@ -44,6 +44,7 @@ import moe.kanon.konfig.entries.values.ValueSetter
 import java.lang.UnsupportedOperationException
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 /**
  * A [ConfigLayer] used for constructing layers from `object` instances, allowing for type-safe construction and
@@ -107,13 +108,14 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T : Any> nullable(
         name: String? = null,
         description: String,
         default: T?,
         value: T? = default,
         noinline setter: ValueSetter<NullableValue<T>, T?>.() -> Unit = { this.field = this.value }
-    ) = object : DelegatedNullableProperty<T>(value, default, name, description, setter) {}
+    ) = object : DelegatedNullableProperty<T>(value, default, name, description, setter, typeOf<T>()) {}
 
     /**
      * Creates a new [NormalEntry] using the given parameters, and then delegates the invoking property to its
@@ -122,13 +124,14 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T : Any> normal(
         name: String? = null,
         description: String,
         default: T,
         value: T = default,
         noinline setter: ValueSetter<NormalValue<T>, T>.() -> Unit = { this.field = this.value }
-    ) = object : DelegatedNormalProperty<T>(value, default, name, description, setter) {}
+    ) = object : DelegatedNormalProperty<T>(value, default, name, description, setter, typeOf<T>()) {}
 
     /**
      * Creates a new [LimitedEntry] using the given parameters, and then delegates the invoking property to its
@@ -137,6 +140,7 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T> limited(
         name: String? = null,
         description: String,
@@ -145,7 +149,7 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
         value: T = default,
         noinline setter: ValueSetter<LimitedValue<T>, T>.() -> Unit = { this.field = this.value }
     ) where T : Comparable<T>, T : Any =
-        object : DelegatedLimitedProperty<T>(value, default, range, name, description, setter) {}
+        object : DelegatedLimitedProperty<T>(value, default, range, name, description, setter, typeOf<T>()) {}
 
     /**
      * Creates a new [LimitedStringEntry] using the given parameters, and then delegates the invoking property to its
@@ -154,6 +158,7 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected fun limited(
         name: String? = null,
         description: String,
@@ -170,11 +175,12 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T : Any> constant(
         name: String? = null,
         description: String,
         value: T
-    ) = object : DelegatedConstantProperty<T>(value, name, description) {}
+    ) = object : DelegatedConstantProperty<T>(value, name, description, typeOf<T>()) {}
 
     /**
      * Creates a new [LazyEntry] using the given parameters, and then delegates the invoking property to its
@@ -183,11 +189,12 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T : Any> lazy(
         name: String? = null,
         description: String,
         noinline closure: () -> T
-    ) = object : DelegatedLazyProperty<T>(closure, name, description) {}
+    ) = object : DelegatedLazyProperty<T>(closure, name, description, typeOf<T>()) {}
 
     /**
      * Creates a new [DynamicEntry] using the given parameters, and then delegates the invoking property to its
@@ -196,9 +203,10 @@ abstract class ObjectLayer protected constructor(name: String? = null) : Abstrac
      * If the given `name` is `null` *(or simply not defined)* then the [name][KCallable.name] of the invoking property
      * will be used.
      */
+    @UseExperimental(ExperimentalStdlibApi::class)
     protected inline fun <reified T : Any> dynamic(
         name: String? = null,
         description: String,
         noinline closure: () -> T
-    ) = object : DelegatedDynamicProperty<T>(closure, name, description) {}
+    ) = object : DelegatedDynamicProperty<T>(closure, name, description, typeOf<T>()) {}
 }

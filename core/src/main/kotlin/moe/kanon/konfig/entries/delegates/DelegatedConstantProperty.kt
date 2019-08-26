@@ -22,18 +22,20 @@ import moe.kanon.konfig.internal.TypeToken
 import moe.kanon.konfig.entries.values.ConstantValue
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 open class DelegatedConstantProperty<T : Any>(
     val value: T,
     val name: String?,
-    val description: String
+    val description: String,
+    val kotlinType: KType
 ) : TypeToken<T>() {
     operator fun provideDelegate(
         thisRef: ConfigLayer,
         property: KProperty<*>
     ): ReadWriteProperty<ConfigLayer, T> {
         val entryName = name ?: property.name
-        thisRef += ConstantEntry(entryName, description, type, ConstantValue(value, type))
+        thisRef += ConstantEntry(entryName, description, kotlinType, type, value)
 
         return object : ReadWriteProperty<ConfigLayer, T> {
             override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): T = thisRef.getValue(entryName)

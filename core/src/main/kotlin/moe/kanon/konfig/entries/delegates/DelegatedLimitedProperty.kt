@@ -23,6 +23,7 @@ import moe.kanon.konfig.entries.values.LimitedValue
 import moe.kanon.konfig.entries.values.ValueSetter
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 open class DelegatedLimitedProperty<T>(
     val value: T,
@@ -30,14 +31,15 @@ open class DelegatedLimitedProperty<T>(
     val range: ClosedRange<T>,
     val name: String?,
     val description: String,
-    val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
+    val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit,
+    val kotlinType: KType
 ) : TypeToken<T>() where T : Comparable<T>, T : Any {
     operator fun provideDelegate(
         thisRef: ConfigLayer,
         property: KProperty<*>
     ): ReadWriteProperty<ConfigLayer, T> {
         val entryName = name ?: property.name
-        thisRef += LimitedEntry(entryName, description, type, LimitedValue(value, default, range, type, setter))
+        thisRef += LimitedEntry(entryName, description, kotlinType, type, value, default, range, setter)
 
         return object : ReadWriteProperty<ConfigLayer, T> {
             override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): T = thisRef.getValue(entryName)

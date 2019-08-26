@@ -31,6 +31,7 @@ import java.nio.file.Path
  *
  * TODO: Property docs
  */
+@UseExperimental(ExperimentalStdlibApi::class)
 data class Config @JvmOverloads constructor(
     override val name: String,
     val file: Path,

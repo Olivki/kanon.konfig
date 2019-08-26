@@ -39,8 +39,10 @@ import moe.kanon.konfig.layers.BasicLayer
 import moe.kanon.konfig.providers.ConfigProvider
 import moe.kanon.konfig.providers.ConfigProviderFinder
 import java.nio.file.Path
+import kotlin.reflect.typeOf
 
 @DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
 annotation class ConfigDsl
 
 /**
@@ -50,6 +52,7 @@ annotation class ConfigDsl
  * @property [parent] The parent of `this` container, if it has one.
  * @property [layer] The underlying [config-layer][AbstractConfigLayer] of `this` container.
  */
+@ExperimentalStdlibApi
 @ConfigDsl
 class LayerContainer(
     val name: String,
@@ -98,8 +101,9 @@ class LayerContainer(
         value: T? = default,
         noinline setter: ValueSetter<NullableValue<T>, T?>.() -> Unit = { this.field = this.value }
     ) {
-        val type = typeTokenOf<T>().type
-        layer += NullableEntry(name, description, type, NullableValue(value, default, type, setter))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += NullableEntry(name, description, kotlinType, javaType, value, default, setter)
     }
 
     @ConfigDsl
@@ -110,8 +114,9 @@ class LayerContainer(
         value: T = default,
         noinline setter: ValueSetter<NormalValue<T>, T>.() -> Unit = { this.field = this.value }
     ) {
-        val type = typeTokenOf<T>().type
-        layer += NormalEntry(name, description, type, NormalValue(value, default, type, setter))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += NormalEntry(name, description, kotlinType, javaType, value, default, setter)
     }
 
     @ConfigDsl
@@ -123,8 +128,9 @@ class LayerContainer(
         value: T = default,
         noinline setter: ValueSetter<LimitedValue<T>, T>.() -> Unit = { this.field = this.value }
     ) {
-        val type = typeTokenOf<T>().type
-        layer += LimitedEntry(name, description, type, LimitedValue(value, default, range, type, setter))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += LimitedEntry(name, description, kotlinType, javaType, value, default, range, setter)
     }
 
     @ConfigDsl
@@ -136,20 +142,21 @@ class LayerContainer(
         value: String = default,
         setter: ValueSetter<LimitedStringValue, String>.() -> Unit = { this.field = this.value }
     ) {
-        val type = typeTokenOf<String>().type
-        layer += LimitedStringEntry(name, description, type, LimitedStringValue(value, default, range, type, setter))
+        layer += LimitedStringEntry(name, description, value, default, range, setter)
     }
 
     @ConfigDsl
     @JvmSynthetic inline fun <reified T : Any> constantValue(name: String, description: String, value: T) {
-        val type = typeTokenOf<T>().type
-        layer += ConstantEntry(name, description, type, ConstantValue(value, type))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += ConstantEntry(name, description, kotlinType, javaType, value)
     }
 
     @ConfigDsl
     @JvmSynthetic inline fun <reified T : Any> lazyValue(name: String, description: String, noinline value: (() -> T)) {
-        val type = typeTokenOf<T>().type
-        layer += LazyEntry(name, description, type, LazyValue(value, type))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += LazyEntry(name, description, kotlinType, javaType, value)
     }
 
     @ConfigDsl
@@ -158,16 +165,18 @@ class LayerContainer(
         description: String,
         noinline value: (() -> T)
     ) {
-        val type = typeTokenOf<T>().type
-        layer += DynamicEntry(name, description, type, DynamicValue(value, type))
+        val kotlinType = typeOf<T>()
+        val javaType = typeTokenOf<T>().type
+        layer += DynamicEntry(name, description, kotlinType, javaType, value)
     }
 }
 
 @ConfigDsl
+@UseExperimental(ExperimentalStdlibApi::class)
 fun buildConfig(
     name: String,
     file: Path,
     settings: ConfigSettings = ConfigSettings.default,
-    provider: ConfigProvider = ConfigProviderFinder.findProvider(file).unwrap(),
+    provider: ConfigProvider = ConfigProviderFinder.findProvider(file, ClassLoader.getSystemClassLoader()).unwrap(),
     scope: LayerContainer.() -> Unit
 ): Config = Config(name, file, LayerContainer(name).apply(scope).layer, settings, provider)

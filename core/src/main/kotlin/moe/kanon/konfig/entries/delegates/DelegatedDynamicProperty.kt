@@ -24,18 +24,20 @@ import moe.kanon.konfig.internal.TypeToken
 import moe.kanon.konfig.entries.values.DynamicValue
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 open class DelegatedDynamicProperty<T : Any>(
     val value: () -> T,
     val name: String?,
-    val description: String
+    val description: String,
+    val kotlinType: KType
 ) : TypeToken<T>() {
     operator fun provideDelegate(
         thisRef: ConfigLayer,
         property: KProperty<*>
     ): ReadWriteProperty<ConfigLayer, T> {
         val entryName = name ?: property.name
-        thisRef += DynamicEntry(entryName, description, type, DynamicValue(value, type))
+        thisRef += DynamicEntry(entryName, description, kotlinType, type, value)
 
         return object : ReadWriteProperty<ConfigLayer, T> {
             override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): T = thisRef.getValue(entryName)

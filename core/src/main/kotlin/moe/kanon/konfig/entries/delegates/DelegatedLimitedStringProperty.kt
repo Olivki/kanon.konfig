@@ -25,6 +25,7 @@ import moe.kanon.konfig.internal.typeTokenOf
 import java.lang.reflect.Type
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 open class DelegatedLimitedStringProperty(
     val value: String,
@@ -34,19 +35,12 @@ open class DelegatedLimitedStringProperty(
     val description: String,
     val setter: ValueSetter<LimitedStringValue, String>.() -> Unit
 ) {
-    private val type: Type = typeTokenOf<String>().type
-
     operator fun provideDelegate(
         thisRef: ConfigLayer,
         property: KProperty<*>
     ): ReadWriteProperty<ConfigLayer, String> {
         val entryName = name ?: property.name
-        thisRef += LimitedStringEntry(
-            entryName,
-            description,
-            type,
-            LimitedStringValue(value, default, range, type, setter)
-        )
+        thisRef += LimitedStringEntry(entryName, description, value, default, range, setter)
 
         return object : ReadWriteProperty<ConfigLayer, String> {
             override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): String = thisRef.getValue(entryName)

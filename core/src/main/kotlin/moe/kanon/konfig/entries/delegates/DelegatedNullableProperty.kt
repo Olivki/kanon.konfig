@@ -23,20 +23,22 @@ import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.entries.values.ValueSetter
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 open class DelegatedNullableProperty<T : Any?>(
     val value: T?,
     val default: T?,
     val name: String?,
     val description: String,
-    val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
+    val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit,
+    val kotlinType: KType
 ) : TypeToken<T>() {
     operator fun provideDelegate(
         thisRef: ConfigLayer,
         property: KProperty<*>
     ): ReadWriteProperty<ConfigLayer, T?> {
         val entryName = name ?: property.name
-        thisRef += NullableEntry(entryName, description, type, NullableValue(value, default, type, setter))
+        thisRef += NullableEntry(entryName, description, kotlinType, type, value, default, setter)
 
         return object : ReadWriteProperty<ConfigLayer, T?> {
             override fun getValue(thisRef: ConfigLayer, property: KProperty<*>): T? =

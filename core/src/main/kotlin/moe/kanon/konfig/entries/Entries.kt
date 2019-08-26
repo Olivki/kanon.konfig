@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+@file:Suppress("DataClassPrivateConstructor")
+
 package moe.kanon.konfig.entries
 
-import moe.kanon.konfig.layers.AbstractConfigLayer
 import moe.kanon.konfig.entries.values.ConstantValue
 import moe.kanon.konfig.entries.values.DynamicValue
 import moe.kanon.konfig.entries.values.LazyValue
@@ -25,8 +26,12 @@ import moe.kanon.konfig.entries.values.LimitedValue
 import moe.kanon.konfig.entries.values.NormalValue
 import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.entries.values.Value
+import moe.kanon.konfig.entries.values.ValueSetter
+import moe.kanon.konfig.internal.typeTokenOf
+import moe.kanon.konfig.layers.AbstractConfigLayer
 import java.lang.reflect.Type
 import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 sealed class Entry<T> {
     /**
@@ -46,6 +51,11 @@ sealed class Entry<T> {
      * The underlying [value-class][Value] of this entry.
      */
     abstract val value: Value
+
+    /**
+     * The kotlin-type of the [value] this entry is storing.
+     */
+    abstract val kotlinType: KType
 
     /**
      * The java-type of the [value] this entry is storing.
@@ -73,51 +83,135 @@ sealed class Entry<T> {
     override fun toString(): String = "Entry(name='$name', description='$description', type=$javaType, value=$value)"
 }
 
-data class NullableEntry<T : Any?>(
+data class NullableEntry<T : Any?> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: NullableValue<T>
-) : Entry<T>()
+) : Entry<T>() {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: T?,
+        default: T?,
+        setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
+    ) : this(name, description, kotlinType, javaType, NullableValue(value, default, kotlinType, javaType, setter))
+}
 
-data class NormalEntry<T : Any>(
+data class NormalEntry<T : Any> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: NormalValue<T>
-) : Entry<T>()
+) : Entry<T>() {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: T,
+        default: T,
+        setter: ValueSetter<NormalValue<T>, T>.() -> Unit
+    ) : this(name, description, kotlinType, javaType, NormalValue(value, default, kotlinType, javaType, setter))
+}
 
-data class LimitedEntry<T>(
+data class LimitedEntry<T> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: LimitedValue<T>
-) : Entry<T>() where T : Comparable<T>, T : Any
+) : Entry<T>() where T : Comparable<T>, T : Any {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: T,
+        default: T,
+        range: ClosedRange<T>,
+        setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
+    ) : this(name, description, kotlinType, javaType, LimitedValue(value, default, range, kotlinType, javaType, setter))
+}
 
-data class LimitedStringEntry(
+data class LimitedStringEntry private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: LimitedStringValue
-) : Entry<String>()
+) : Entry<String>() {
+    companion object {
+        @UseExperimental(ExperimentalStdlibApi::class)
+        operator fun invoke(
+            name: String,
+            description: String,
+            value: String,
+            default: String,
+            range: IntRange,
+            setter: ValueSetter<LimitedStringValue, String>.() -> Unit
+        ): LimitedStringEntry {
+            val kotlinType = typeOf<String>()
+            val javaType = typeTokenOf<String>().type
+            return LimitedStringEntry(
+                name,
+                description,
+                kotlinType,
+                javaType,
+                LimitedStringValue(value, default, range, kotlinType, javaType, setter)
+            )
+        }
+    }
+}
 
-data class ConstantEntry<T : Any>(
+data class ConstantEntry<T : Any> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: ConstantValue<T>
-) : Entry<T>()
+) : Entry<T>() {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: T
+    ) : this(name, description, kotlinType, javaType, ConstantValue(value, kotlinType, javaType))
+}
 
-data class LazyEntry<T : Any>(
+data class LazyEntry<T : Any> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: LazyValue<T>
-) : Entry<T>()
+) : Entry<T>() {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: () -> T
+    ) : this(name, description, kotlinType, javaType, LazyValue(value, kotlinType, javaType))
+}
 
-data class DynamicEntry<T : Any>(
+data class DynamicEntry<T : Any> private constructor(
     override val name: String,
     override val description: String,
+    override val kotlinType: KType,
     override val javaType: Type,
     override val value: DynamicValue<T>
-) : Entry<T>()
+) : Entry<T>() {
+    constructor(
+        name: String,
+        description: String,
+        kotlinType: KType,
+        javaType: Type,
+        value: () -> T
+    ) : this(name, description, kotlinType, javaType, DynamicValue(value, kotlinType, javaType))
+}
