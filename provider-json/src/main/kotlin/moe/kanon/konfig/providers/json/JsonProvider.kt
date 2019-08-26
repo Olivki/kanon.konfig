@@ -223,7 +223,7 @@ class JsonProvider(
                 GenericPrintingStyle.DISABLED -> {
                 } // just don't do anything.
             }
-            "type" to entry.value.name
+            "type" to entry.value.valueType
             when (entry) {
                 is LimitedEntry<*> -> "range" to entry.value.range.toString()
                 is LimitedStringEntry -> "range" to entry.value.range.toString()

@@ -25,14 +25,14 @@ import kotlin.reflect.full.isSubclassOf
 
 data class ValueSetter<V : Value, T>(val ref: V, var field: T, val value: T)
 
-sealed class Value(val name: String, val isMutable: Boolean, val shouldDeserialize: Boolean) {
+sealed class Value(val valueType: String, val isMutable: Boolean, val shouldDeserialize: Boolean) {
     abstract val javaType: Type
 
     /**
      * Sets the `value` of this value-class to its `default` value, if it has one, otherwise does nothing.
      */
     open fun resetValue() {
-        UNSUPPORTED("Can't reset value of a '$name' value")
+        UNSUPPORTED("Can't reset value of a '$valueType' value")
     }
 
     protected inline fun validateType(valueClass: KClass<*>, topClass: KClass<*>) {
