@@ -91,6 +91,19 @@ abstract class XmlConverter<T> : Converter {
     protected inline fun <T> HierarchicalStreamReader.use(scope: HierarchicalStreamReader.() -> T): T =
         with(this, scope)
 
+    protected inline fun <T> HierarchicalStreamReader.consumeNext(action: () -> Unit) {
+        this.moveDown()
+        action()
+        this.moveUp()
+    }
+
+    protected inline fun <T> HierarchicalStreamReader.readNext(action: () -> T): T {
+        this.moveDown()
+        val result = action()
+        this.moveUp()
+        return result
+    }
+
     protected inline fun HierarchicalStreamReader.forAll(action: () -> Unit) {
         while (this.hasMoreChildren()) {
             this.moveDown()
