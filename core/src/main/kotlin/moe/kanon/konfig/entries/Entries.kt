@@ -26,6 +26,7 @@ import moe.kanon.konfig.entries.values.NormalValue
 import moe.kanon.konfig.entries.values.NullableValue
 import moe.kanon.konfig.entries.values.Value
 import java.lang.reflect.Type
+import kotlin.reflect.KType
 
 sealed class Entry<T> {
     /**
@@ -47,9 +48,9 @@ sealed class Entry<T> {
     abstract val value: Value
 
     /**
-     * The type of the [value] this entry is storing.
+     * The java-type of the [value] this entry is storing.
      */
-    abstract val type: Type
+    abstract val javaType: Type
 
     override fun equals(other: Any?): Boolean = when {
         this === other -> true
@@ -57,7 +58,7 @@ sealed class Entry<T> {
         name != other.name -> false
         description != other.description -> false
         value != other.value -> false
-        type != other.type -> false
+        javaType != other.javaType -> false
         else -> true
     }
 
@@ -65,58 +66,58 @@ sealed class Entry<T> {
         var result = name.hashCode()
         result = 31 * result + description.hashCode()
         result = 31 * result + value.hashCode()
-        result = 31 * result + type.hashCode()
+        result = 31 * result + javaType.hashCode()
         return result
     }
 
-    override fun toString(): String = "Entry(name='$name', description='$description', type=$type, value=$value)"
+    override fun toString(): String = "Entry(name='$name', description='$description', type=$javaType, value=$value)"
 }
 
 data class NullableEntry<T : Any?>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: NullableValue<T>
 ) : Entry<T>()
 
 data class NormalEntry<T : Any>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: NormalValue<T>
 ) : Entry<T>()
 
 data class LimitedEntry<T>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: LimitedValue<T>
 ) : Entry<T>() where T : Comparable<T>, T : Any
 
 data class LimitedStringEntry(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: LimitedStringValue
 ) : Entry<String>()
 
 data class ConstantEntry<T : Any>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: ConstantValue<T>
 ) : Entry<T>()
 
 data class LazyEntry<T : Any>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: LazyValue<T>
 ) : Entry<T>()
 
 data class DynamicEntry<T : Any>(
     override val name: String,
     override val description: String,
-    override val type: Type,
+    override val javaType: Type,
     override val value: DynamicValue<T>
 ) : Entry<T>()

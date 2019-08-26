@@ -24,7 +24,7 @@ data class JsonProviderSettings private constructor(
     /**
      * The style that the system should use for printing output of generics.
      *
-     * This is mainly used for the output of the [Entry.type] property in the configuration file.
+     * This is mainly used for the output of the [Entry.javaType] property in the configuration file.
      */
     val genericPrintingStyle: GenericPrintingStyle
 ) {

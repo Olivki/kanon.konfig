@@ -17,7 +17,6 @@
 package moe.kanon.konfig.entries.values
 
 import moe.kanon.kommons.UNSUPPORTED
-import moe.kanon.kommons.requireThat
 import moe.kanon.konfig.ConfigException
 import moe.kanon.konfig.internal.TypeToken
 import java.lang.reflect.Type
@@ -27,7 +26,7 @@ import kotlin.reflect.full.isSubclassOf
 data class ValueSetter<V : Value, T>(val ref: V, var field: T, val value: T)
 
 sealed class Value(val name: String, val isMutable: Boolean, val shouldDeserialize: Boolean) {
-    abstract val type: Type
+    abstract val javaType: Type
 
     /**
      * Sets the `value` of this value-class to its `default` value, if it has one, otherwise does nothing.
@@ -53,7 +52,7 @@ sealed class Value(val name: String, val isMutable: Boolean, val shouldDeseriali
 class NullableValue<T : Any?>(
     value: T?,
     val default: T?,
-    override val type: Type,
+    override val javaType: Type,
     private val setter: ValueSetter<NullableValue<T>, T?>.() -> Unit
 ) : Value("nullable", isMutable = true, shouldDeserialize = true) {
     var value: T? = value
@@ -61,7 +60,7 @@ class NullableValue<T : Any?>(
             field = if (value != null) {
                 validateType(
                     (value?.let { it as Any } ?: throw ConfigException())::class,
-                    (TypeToken.of(type).rawType as Class<*>).kotlin
+                    (TypeToken.of(javaType).rawType as Class<*>).kotlin
                 )
                 ValueSetter(this, field, value).apply(setter).field
             } else {
@@ -73,13 +72,13 @@ class NullableValue<T : Any?>(
         value = default
     }
 
-    override fun toString(): String = "NullableValue(value=$value, default=$default, type=$type)"
+    override fun toString(): String = "NullableValue(value=$value, default=$default, type=$javaType)"
 }
 
 class NormalValue<T : Any>(
     value: T,
     val default: T,
-    override val type: Type,
+    override val javaType: Type,
     private val setter: ValueSetter<NormalValue<T>, T>.() -> Unit
 ) : Value("normal", isMutable = true, shouldDeserialize = true) {
     var value: T = value
@@ -92,14 +91,14 @@ class NormalValue<T : Any>(
         value = default
     }
 
-    override fun toString(): String = "NormalValue(value=$value, default=$default, type=$type)"
+    override fun toString(): String = "NormalValue(value=$value, default=$default, type=$javaType)"
 }
 
 class LimitedValue<T>(
     value: T,
     val default: T,
     val range: ClosedRange<T>,
-    override val type: Type,
+    override val javaType: Type,
     private val setter: ValueSetter<LimitedValue<T>, T>.() -> Unit
 ) : Value("limited", isMutable = true, shouldDeserialize = true) where T : Any, T : Comparable<T> {
     var value: T = value
@@ -114,14 +113,14 @@ class LimitedValue<T>(
         value = default
     }
 
-    override fun toString(): String = "LimitedValue(value=$value, default=$default, range=$range, type=$type)"
+    override fun toString(): String = "LimitedValue(value=$value, default=$default, range=$range, type=$javaType)"
 }
 
 class LimitedStringValue(
     value: String,
     val default: String,
     val range: IntRange,
-    override val type: Type,
+    override val javaType: Type,
     private val setter: ValueSetter<LimitedStringValue, String>.() -> Unit
 ) : Value("limited", isMutable = true, shouldDeserialize = true) {
     var value: String = value
@@ -136,17 +135,17 @@ class LimitedStringValue(
         value = default
     }
 
-    override fun toString(): String = "LimitedStringValue(value='$value', default='$default', range=$range, type=$type)"
+    override fun toString(): String = "LimitedStringValue(value='$value', default='$default', range=$range, type=$javaType)"
 }
 
 data class ConstantValue<T : Any>(
     val value: T,
-    override val type: Type
+    override val javaType: Type
 ) : Value("constant", isMutable = false, shouldDeserialize = true)
 
 class LazyValue<T : Any>(
     initializer: () -> T,
-    override val type: Type
+    override val javaType: Type
 ) : Value("lazy", isMutable = false, shouldDeserialize = false) {
     @Suppress("ClassName")
     private object UNINITIALIZED_VALUE
@@ -168,14 +167,14 @@ class LazyValue<T : Any>(
     val isInitialized: Boolean get() = _value != UNINITIALIZED_VALUE
 
     override fun toString(): String =
-        "LazyValue(value=${if (isInitialized) value.toString() else "Not initialized"}, type=$type)"
+        "LazyValue(value=${if (isInitialized) value.toString() else "Not initialized"}, type=$javaType)"
 }
 
 class DynamicValue<T : Any>(
     private val closure: () -> T,
-    override val type: Type
+    override val javaType: Type
 ) : Value("dynamic", isMutable = false, shouldDeserialize = false) {
     val value: T get() = closure()
 
-    override fun toString(): String = "DynamicValue(value=$closure, type=$type)"
+    override fun toString(): String = "DynamicValue(value=$closure, type=$javaType)"
 }

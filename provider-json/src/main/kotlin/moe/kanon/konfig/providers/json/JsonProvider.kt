@@ -105,7 +105,7 @@ class JsonProvider(
                 val currentNode = node.asJsonObject
                 val entry = config.getEntry<Any?>(key)
                 val container: JsonElement = currentNode["container"].asJsonObject["value"]
-                val result: Any? = gson.fromJson(container, entry.type)
+                val result: Any? = gson.fromJson(container, entry.javaType)
                 val currentValue = config.getNullableValue<Any?>(key)
                 val entryPath = "${config.path}${entry.name}"
 
@@ -137,7 +137,7 @@ class JsonProvider(
             val currentNode = node.asJsonObject
             val entry = currentLayer.getEntry<Any?>(key)
             val container = currentNode["container"].asJsonObject["value"]
-            val result: Any? = gson.fromJson(container, entry.type)
+            val result: Any? = gson.fromJson(container, entry.javaType)
             val currentValue = currentLayer.getNullableValue<Any?>(key)
             val entryPath = "${currentLayer.path}${entry.name}"
 
@@ -218,8 +218,8 @@ class JsonProvider(
         "description" to entry.description
         "container" {
             when (settings.genericPrintingStyle) {
-                GenericPrintingStyle.JAVA -> "class" to entry.type.typeName
-                GenericPrintingStyle.KOTLIN -> "class" to entry.type.kotlinTypeName
+                GenericPrintingStyle.JAVA -> "class" to entry.javaType.typeName
+                GenericPrintingStyle.KOTLIN -> "class" to entry.javaType.kotlinTypeName
                 GenericPrintingStyle.DISABLED -> {
                 } // just don't do anything.
             }
