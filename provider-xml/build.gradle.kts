@@ -1,5 +1,5 @@
 description = "The XML provider for kanon.konfig"
-version = "1.2.2"
+version = "1.3.0"
 extra["packageName"] = "xml-provider"
 
 plugins {
