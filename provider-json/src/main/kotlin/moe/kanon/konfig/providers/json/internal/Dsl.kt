@@ -23,6 +23,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import moe.kanon.kommons.collections.size
 
 @DslMarker
 annotation class JsonDsl
@@ -32,6 +33,34 @@ annotation class JsonDsl
 @JsonDsl inline class JsonBuilder(val obj: JsonObject) {
     companion object {
         private val gson = GsonBuilder().create()
+
+        @JsonDsl
+        fun array(vararg args: Any?): JsonArray = JsonArray(args.size).also { array ->
+            for (value in args) {
+                when (value) {
+                    null -> array.add(JsonNull.INSTANCE)
+                    is String -> array.add(value)
+                    is Boolean -> array.add(value)
+                    is Number -> array.add(value)
+                    is JsonElement -> array.add(value)
+                    else -> array.add(gson.toJsonTree(value))
+                }
+            }
+        }
+
+        @JsonDsl
+        fun array(iterable: Iterable<Any?>): JsonArray = JsonArray(iterable.size).also { array ->
+            for (value in iterable) {
+                when (value) {
+                    null -> array.add(JsonNull.INSTANCE)
+                    is String -> array.add(value)
+                    is Boolean -> array.add(value)
+                    is Number -> array.add(value)
+                    is JsonElement -> array.add(value)
+                    else -> array.add(gson.toJsonTree(value))
+                }
+            }
+        }
     }
 
     @JsonDsl
@@ -52,18 +81,8 @@ annotation class JsonDsl
     }
 
     @JsonDsl
-    fun array(name: String, vararg args: Any?): JsonArray = JsonArray(args.size).also { array ->
-        for (value in args) {
-            when (value) {
-                null -> array.add(JsonNull.INSTANCE)
-                is String -> array.add(value)
-                is Boolean -> array.add(value)
-                is Number -> array.add(value)
-                is JsonElement -> array.add(value)
-                else -> array.add(gson.toJsonTree(value))
-            }
-        }
-        obj.add(name, array)
+    fun array(name: String, vararg args: Any?): JsonArray = array(*args).also {
+        obj.add(name, it)
     }
 }
 

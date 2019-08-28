@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 description = "The JSON provider for kanon.konfig"
-version = "1.1.1"
+version = "1.2.0"
 extra["packageName"] = "json-provider"
 
 plugins {
