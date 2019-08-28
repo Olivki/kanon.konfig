@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
  * A class that implements both [JsonSerializer] and [JsonDeserializer] for a specific [type][T].
  */
 abstract class JsonConverter<T : Any>(val type: KClass<T>) : JsonSerializer<T>, JsonDeserializer<T> {
-    abstract override fun serialize(src: T, typeOfSrc: Type, context: JsonSerializationContext): JsonElement
-
     abstract override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T
+
+    abstract override fun serialize(src: T, typeOfSrc: Type, context: JsonSerializationContext): JsonElement
 }
