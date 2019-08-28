@@ -33,34 +33,6 @@ annotation class JsonDsl
 @JsonDsl inline class JsonBuilder(val obj: JsonObject) {
     companion object {
         private val gson = GsonBuilder().create()
-
-        @JsonDsl
-        fun array(vararg args: Any?): JsonArray = JsonArray(args.size).also { array ->
-            for (value in args) {
-                when (value) {
-                    null -> array.add(JsonNull.INSTANCE)
-                    is String -> array.add(value)
-                    is Boolean -> array.add(value)
-                    is Number -> array.add(value)
-                    is JsonElement -> array.add(value)
-                    else -> array.add(gson.toJsonTree(value))
-                }
-            }
-        }
-
-        @JsonDsl
-        fun array(iterable: Iterable<Any?>): JsonArray = JsonArray(iterable.size).also { array ->
-            for (value in iterable) {
-                when (value) {
-                    null -> array.add(JsonNull.INSTANCE)
-                    is String -> array.add(value)
-                    is Boolean -> array.add(value)
-                    is Number -> array.add(value)
-                    is JsonElement -> array.add(value)
-                    else -> array.add(gson.toJsonTree(value))
-                }
-            }
-        }
     }
 
     @JsonDsl
@@ -77,6 +49,34 @@ annotation class JsonDsl
             is Number -> obj.addProperty(this, value)
             is JsonElement -> obj.add(this, value)
             else -> obj.add(this, gson.toJsonTree(value))
+        }
+    }
+
+    @JsonDsl
+    fun array(vararg args: Any?): JsonArray = JsonArray(args.size).also { array ->
+        for (value in args) {
+            when (value) {
+                null -> array.add(JsonNull.INSTANCE)
+                is String -> array.add(value)
+                is Boolean -> array.add(value)
+                is Number -> array.add(value)
+                is JsonElement -> array.add(value)
+                else -> array.add(gson.toJsonTree(value))
+            }
+        }
+    }
+
+    @JsonDsl
+    fun array(iterable: Iterable<Any?>): JsonArray = JsonArray(iterable.size).also { array ->
+        for (value in iterable) {
+            when (value) {
+                null -> array.add(JsonNull.INSTANCE)
+                is String -> array.add(value)
+                is Boolean -> array.add(value)
+                is Number -> array.add(value)
+                is JsonElement -> array.add(value)
+                else -> array.add(gson.toJsonTree(value))
+            }
         }
     }
 
