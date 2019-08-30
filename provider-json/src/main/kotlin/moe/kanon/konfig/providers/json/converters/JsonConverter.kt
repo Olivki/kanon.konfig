@@ -26,8 +26,13 @@ import kotlin.reflect.KClass
 
 /**
  * A class that implements both [JsonSerializer] and [JsonDeserializer] for a specific [type][T].
+ *
+ * @property [type] The class that this converter converts for
+ * @property [shouldWorkOnChildren] Whether or not this converter should also convert any children of the given [type],
+ * by default a converter *only* converts instances of the given `type` and not any types that are inherited from it.
  */
-abstract class JsonConverter<T : Any>(val type: KClass<T>) : JsonSerializer<T>, JsonDeserializer<T> {
+abstract class JsonConverter<T : Any>(val type: KClass<T>, val shouldWorkOnChildren: Boolean = false) :
+    JsonSerializer<T>, JsonDeserializer<T> {
     abstract override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T
 
     abstract override fun serialize(src: T, typeOfSrc: Type, context: JsonSerializationContext): JsonElement

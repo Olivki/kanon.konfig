@@ -24,11 +24,19 @@ import kotlin.reflect.KClass
 @JvmName("registerReifiedConverter")
 inline fun <reified T : Any> GsonBuilder.registerConverter(converter: JsonConverter<T>) {
     val type = object : TypeToken<T>() {}.type
-    this.registerTypeAdapter(type, converter)
+    if (converter.shouldWorkOnChildren) {
+        this.registerTypeHierarchyAdapter(converter.type.java, converter)
+    } else {
+        this.registerTypeAdapter(type, converter)
+    }
 }
 
 fun <T : Any> GsonBuilder.registerConverter(clz: KClass<T>, converter: JsonConverter<T>) {
-    this.registerTypeAdapter(clz.java, converter)
+    if (converter.shouldWorkOnChildren) {
+        this.registerTypeHierarchyAdapter(clz.java, converter)
+    } else {
+        this.registerTypeAdapter(clz.java, converter)
+    }
 }
 
 /**
@@ -36,6 +44,10 @@ fun <T : Any> GsonBuilder.registerConverter(clz: KClass<T>, converter: JsonConve
  */
 fun GsonBuilder.registerInstalledConverters(classLoader: ClassLoader) {
     for (converter in loadServices<JsonConverter<*>>(classLoader)) {
-        registerTypeAdapter(converter.type.java, converter)
+        if (converter.shouldWorkOnChildren) {
+            registerTypeHierarchyAdapter(converter.type.java, converter)
+        } else {
+            registerTypeAdapter(converter.type.java, converter)
+        }
     }
 }
