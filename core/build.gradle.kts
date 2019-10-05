@@ -1,6 +1,6 @@
 group = "moe.kanon.konfig"
 description = "The core of kanon.konfig"
-version = "2.1.0"
+version = "2.1.1"
 extra["packageName"] = "core"
 
 plugins {

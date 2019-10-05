@@ -87,7 +87,10 @@ abstract class AbstractConfigLayer : ConfigLayer {
         val entry = getEntry<T>(sanitizedPath)
         val entryValue = entry.value
 
-        if (entryValue is NullableValue<*>) (entryValue as NullableValue<T>).value = value
+        if (entryValue is NullableValue<*>) {
+            (entryValue as NullableValue<Any?>).value = value
+            return this // short-circuit the function so we don't throw an illegal-argument-exception
+        }
 
         requireThat(value != null) { "'path' <$path> points towards a non-nullable entry, but 'value' was null" }
 
