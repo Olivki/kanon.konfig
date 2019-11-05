@@ -65,3 +65,11 @@ gradle-app.setting
 
 !/appender.jar
 /src/test/kotlin/moe/kanon/konfig/tests/DslTest.kt
+/core/build/
+/build/
+/core/src/test/kotlin/moe/kanon/konfig/Ugly.kt
+/provider-json/build/
+/provider-xml/build/
+/provider-xml/src/test/kotlin/moe/kanon/konfig/providers/xml/Ugly.kt
+/provider-json/src/test/kotlin/moe/kanon/konfig/providers/json/Ugly.kt
+/provider-hocon/build/

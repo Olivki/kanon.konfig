@@ -1,12 +1,6 @@
 ## kanon.konfig
 
-A "configuration" library/framework for Kotlin designed to be "user-first" rather than "dev-first".
-
-This library is partially inspired from the great [konf](https://github.com/uchuhimo/konf) library, reason for making this library is because while konf is great, it's very heavily catered towards being "dev-first", and what I needed was something that was catered towards "user-first", that is, producing a configuration file which you know will be edited by a human manually, and for that konf does not really do the job very nicely. My other "problem" with konf is that essentially the only way to create `Items` is through property delegation, which can get very ugly and cumbersome if you're trying to create a configuration for a structure where you *won't* always have access to a `object` reference of it. And thus this library was born.
-
-kanon.konfig is mainly made just for personal use, it is however thoroughly documented, in case someone else would have any use for it. As for actual non-kotlindoc documentation, there is none, and most likely won't be any, but the kotlindocs should be more than enough to give anyone an understanding of how to use this library.
-
-**NOTE**: kanon.konfig will most likely *not* work very well if used from Java, as it *heavily* relies on Kotlins `reified` generics and the `inline` mechanic and its smart casting, while it is not impossible to use this library from the Java side, the experience will most likely not be very good, and certain parts of the library have been designed to *deliberately* not work when used from Java, due to several reasons.
+TODO: Documentation and how to use..
 
 ## Installation
 
@@ -15,24 +9,16 @@ Gradle
 - Groovy
 
   ```groovy
-  repositories {
-      maven { url "https://dl.bintray.com/olivki/kanon" }
-  }
-  
   dependencies {
-      compile "moe.kanon.konfig:kanon.konfig:1.1.0"
+      implementation "moe.kanon.konfig:kanon.konfig:${LATEST_VERSION}"
   }
   ```
 
 - Kotlin
 
   ```kotlin
-  repositories {
-      maven(url = "https://dl.bintray.com/olivki/kanon")
-  }
-  
   dependencies {
-      compile(group = "moe.kanon.konfig", name = "kanon.konfig", version = "1.1.0")
+      implementation(group = "moe.kanon.konfig", name = "kanon.konfig", version = "${LATEST_VERSION}")
   }
   ```
 
@@ -42,7 +28,7 @@ Maven
 <dependency>
     <groupId>moe.kanon.konfig</groupId>
     <artifactId>kanon.konfig</artifactId>
-    <version>1.1.0</version>
+    <version>${LATEST_VERSION}</version>
     <type>pom</type>
 </dependency>
 
